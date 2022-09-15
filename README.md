@@ -5,6 +5,8 @@ Author: Suxing Liu,  Alexander Bucksch
 
 ![Syngenta_PhenoTOOLs](../main/media/image_01.png) 
 
+(../main/media/image_02.png) 
+
 Robust and parameter-free plant image segmentation and trait extraction.
 
 1. Process with plant image top view, including whole tray plant image, this tool will segment it into individual images.
