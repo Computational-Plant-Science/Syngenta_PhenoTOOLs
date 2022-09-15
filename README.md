@@ -1,4 +1,4 @@
-# Arabidopsis Rosette Analysis
+# Syngenta_PhenoTOOLs
 
 Author: Suxing Liu
 
@@ -18,14 +18,4 @@ Either [Docker](https://www.docker.com/) or [Singularity ](https://sylabs.io/sin
 
 ## Usage
 
-### Docker
 
-```bash
-docker run -v "$(pwd)":/opt/arabidopsis-rosette-analysis -w /opt/arabidopsis-rosette-analysis computationalplantscience/arabidopsis-rosette-analysis python3 /opt/arabidopsis-rosette-analysis/trait_extract_parallel.py -i input -o output -ft "jpg,png"
-```
-
-### Singularity
-
-```bash
-singularity exec docker://computationalplantscience/arabidopsis-rosette-analysis python3 trait_extract_parallel.py -i input -o output -ft "jpg,png"
-```
