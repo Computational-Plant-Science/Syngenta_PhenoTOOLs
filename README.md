@@ -13,6 +13,8 @@ Robust and parameter-free plant image segmentation and trait extraction.
 2. Robust segmentation based on parameter-free color clustering method.
 3. Extract individual plant traits, and write output into excel file.
 
+Sample ear test results in Excel format,unit (cm). 
+
 ![Sample result of Ear test, unit(cm)](../main/media/image_03.png) 
 
 ## Requirements
