@@ -9,9 +9,9 @@ Author: Suxing Liu,  Alexander Bucksch
 
 Robust and parameter-free plant image segmentation and trait extraction.
 
-1. Process with plant image top view, including whole tray plant image, this tool will segment it into individual images.
+1. Process with plant image top view, including whole tray plant image.
 2. Robust segmentation based on parameter-free color clustering method.
-3. Extract individual plant gemetrical traits, and write output into excel file.
+3. Extract individual plant traits, and write output into excel file.
 
 ## Requirements
 
