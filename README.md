@@ -3,9 +3,9 @@
 Author: Suxing Liu,  Alexander Bucksch 
 
 
-![Syngenta_PhenoTOOLs](../main/media/image_01.png) 
+![Maize ear test](../main/media/image_01.png) 
 
-(../main/media/image_02.png) 
+![Maize tassel test](../main/media/image_02.png) 
 
 Robust and parameter-free plant image segmentation and trait extraction.
 
