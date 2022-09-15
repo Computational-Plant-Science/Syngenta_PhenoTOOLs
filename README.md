@@ -21,11 +21,12 @@ Install Docker Engine (https://docs.docker.com/engine/install/)
 
 ## Usage
 
-Install 
-USAGE:
 docker build -t syngenta_phenotools -f Dockerfile .
+
 docker run -v /path to test image:/images -it syngenta_phenotools
 
 cd /opt/Syngenta_PhenoTOOLs/
+
 python3 trait_computation_mazie_ear.py -p /images/ -ft png
+
 python3 trait_computation_maize_tassel.py -p /images/ -ft png
