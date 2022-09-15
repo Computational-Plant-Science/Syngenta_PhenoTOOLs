@@ -6,18 +6,19 @@
 #Created: 2022-10-29
 
 #USAGE:
-#docker build -t plant_test -f Dockerfile .
-#docker run -v /path to test image:/images -it plant_test
-#cd /opt/smart/
+#docker build -t syngenta_phenotools -f Dockerfile .
+#docker run -v /path to test image:/images -it syngenta_phenotools
+
+#cd /opt/Syngenta_PhenoTOOLs/
 #python3 trait_computation_mazie_ear.py -p /images/ -ft png
 #python3 trait_computation_maize_tassel.py -p /images/ -ft png
 
 
 FROM ubuntu:20.04
 
-LABEL maintainer='Suxing Liu, Wes Bonelli'
+LABEL maintainer='Suxing Liu'
 
-COPY ./ /opt/smart
+COPY ./ /opt/Syngenta_PhenoTOOLs
 
 
 RUN apt-get update && apt-get upgrade -y
