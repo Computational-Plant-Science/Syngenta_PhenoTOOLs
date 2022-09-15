@@ -3,7 +3,7 @@
 Author: Suxing Liu
 
 
-![Syngenta_PhenoTOOLs](../master/media/image_01.png) 
+![Syngenta_PhenoTOOLs](../main/media/image_01.png) 
 
 Robust and parameter-free plant image segmentation and trait extraction.
 
