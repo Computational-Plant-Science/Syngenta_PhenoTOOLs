@@ -1,6 +1,6 @@
 # Syngenta_PhenoTOOLs
 
-Author: Suxing Liu
+Author: Suxing Liu,  Alexander Bucksch 
 
 
 ![Syngenta_PhenoTOOLs](../main/media/image_01.png) 
