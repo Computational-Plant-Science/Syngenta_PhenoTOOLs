@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE:
 
-python pipeline.py -p /home/suxingliu/plant-image-analysis/random_test/ -ft jpg
+python pipeline.py -p ~/plant-image-analysis/random_test/ -ft jpg
 
 parameter list:
 
@@ -23,23 +23,7 @@ import subprocess, os
 import sys
 import argparse
 
-'''
-def execute_script(cmd_line):
-    """execute script inside program"""
-    try:
-        print(cmd_line)
-        
-        process = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE)
-        
-        process.wait()
-        
-        #print process.returncode
-        
-    except OSError:
-        
-        print("Failed ...!\n")
 
-'''
 def execute_script(cmd_line):
     """execute script inside program"""
     
@@ -64,13 +48,9 @@ def execute_script(cmd_line):
 
 def image_analysis_pipeline(file_path, ext):
     """execute pipeline scripts in order"""
-    
-    # step 1: segment tray image into individual plant objects
-    seg = "python3 color_seg.py -p " + file_path + " -ft " + str(ext) 
-    
-    #python /opt/code/trait_extract_parallel.py -p /home/suxingliu/plant-image-analysis/data/ -ft JPG
-    # step 2: compute traits for each individual plant objects in a parallel way
-    trait_extract_parallel = "python3 trait_extract_parallel.py -p " + file_path + " -ft " + str(ext) 
+
+    # step : compute traits for each individual plant objects in a parallel way
+    trait_extract_parallel = "trait_computation_maize_tassel.py -p " + file_path + " -ft " + str(ext) 
     
     print("Plant image traits computation pipeline...\n")
     
