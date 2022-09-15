@@ -2,9 +2,8 @@
 
 Author: Suxing Liu
 
-![CI](https://github.com/Computational-Plant-Science/arabidopsis-rosette-analysis/workflows/CI/badge.svg)
 
-![Optional Text](../master/media/image_01.png) 
+![Syngenta_PhenoTOOLs](../master/media/image_01.png) 
 
 Robust and parameter-free plant image segmentation and trait extraction.
 
