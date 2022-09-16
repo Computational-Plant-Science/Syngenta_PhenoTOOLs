@@ -14,7 +14,7 @@
 #python3 trait_computation_maize_tassel.py -p /images/ -ft png
 
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL maintainer='Suxing Liu'
 
@@ -59,6 +59,6 @@ RUN pip3 install numpy \
     pandas 
 
 
-
+WORKDIR /opt/Syngenta_PhenoTOOLs/
 
 

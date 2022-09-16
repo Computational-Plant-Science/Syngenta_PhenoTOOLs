@@ -29,8 +29,6 @@ docker run -v /path to test image:/images -it syngenta_phenotools
 
 (For example: docker run -v /your local directory to cloned "Syngenta_PhenoTOOLs"/Syngenta_PhenoTOOLs/sample_test/Ear_test:/images -it syngenta_phenotools)
 
-cd /opt/Syngenta_PhenoTOOLs/
-
 python3 trait_computation_mazie_ear.py -p /images/ -ft png
 
 python3 trait_computation_maize_tassel.py -p /images/ -ft png
