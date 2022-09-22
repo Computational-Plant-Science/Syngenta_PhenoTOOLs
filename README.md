@@ -19,7 +19,7 @@ Sample ear test results in Excel format,unit (cm).
 
 ## Requirements
 
-[Docker](https://www.docker.com/) is required to run this project in a Unix environment.
+[Docker](https://www.docker.com/) is required to run this project in a Linux environment.
 
 Install Docker Engine (https://docs.docker.com/engine/install/)
 
