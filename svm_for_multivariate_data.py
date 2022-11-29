@@ -11,7 +11,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE
 
-    python3 svm_for_multivariate_data.py -p ~/example/cluster_ml/ -f iris.data
+    python3 svm_for_multivariate_data.py -p ~/example/cluster_ml/ -f trait_part.xlsx
 
 
 
@@ -29,7 +29,12 @@ from sklearn.svm import SVC
 from sklearn import model_selection
 from sklearn.decomposition import PCA
 
+
+import matplotlib
+matplotlib.use('Agg')
+
 from matplotlib import pyplot as plt
+
 import numpy as np 
 
 
@@ -45,11 +50,6 @@ def multidimensional_classification(full_path):
     data_features = ['tassel area', 'tassel area ratio', 'average width', 'average height', 'number of branches', 'average branch length']
     
     #data_features = ['max_width', 'max_height', 'number_of_branches']
-
-
-    # X -> features, y -> label
-    #X = iris.data
-    #y = iris.target
     
     # Extract features
     X = df.loc[:, data_features].values
@@ -180,7 +180,13 @@ def PCA_analysis(X, y):
         plt.scatter(X_pca[target_list == t_name, 0], X_pca[target_list ==t_name, 1], color = color_rgb, label=t_name)
 
     plt.legend()
-    plt.show()
+    #plt.show()
+    
+    # save segmentation result
+    result_file = (current_path + 'scatter_plot.png')
+    plt.savefig(result_file)
+    
+
 
 
 

@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE
 
-    python3 NN_multivariate_data.py -p ~/example/cluster_ml/ -f iris.data
+    python3 NN_multivariate_data.py -p ~/example/cluster_ml/ -f trait_part.xlsx
 
 
 
@@ -34,7 +34,10 @@ import keras
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
+
 
 
 def multidimensional_classification(full_path):
@@ -136,10 +139,9 @@ def multidimensional_classification(full_path):
     plt.ylabel('Accuracy')
     plt.legend()
 
-    plt.show()
-
-
-
+     # save segmentation result
+    result_file = (current_path + 'Accuracy_plot.png')
+    plt.savefig(result_file)
 
     preds = model.predict(X) # see how the model did!
     print(preds[0]) # i'm spreading that prediction across three nodes and they sum to 1
