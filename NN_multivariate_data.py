@@ -1,7 +1,7 @@
 """
 Version: 1.5
 
-Summary: Build a Neural Network (Multi-class Classification) for Tassel shape calssification
+Summary: Build a Neural Network (Multi-class Classification) for Tassel shape classification
 
 Author: suxing liu
 
