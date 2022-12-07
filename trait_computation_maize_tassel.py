@@ -578,7 +578,7 @@ def comp_external_contour(orig, thresh):
     #print(area_c_max, sum(area_child_contour_sum))
     
     # compute the tassel_area 
-    tassel_area = area_c_max - sum(area_child_contour_sum)
+    tassel_area = abs(area_c_max - sum(area_child_contour_sum))
     
     #compute the area ratio of tassel area against its convex hull area
     tassel_area_ratio = tassel_area/convex_hull_area
