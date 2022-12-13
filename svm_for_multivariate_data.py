@@ -9,7 +9,7 @@ Author-email: suxingliu@gmail.com
 
 USAGE
 
-    python3 svm_for_multivariate_data.py -p ~/example/cluster_ml/ -f trait_part.xlsx
+    python3 svm_for_multivariate_data.py -p ~/example/cluster_ml/ -f Tassel_trait_part.xlsx
 
 """
 

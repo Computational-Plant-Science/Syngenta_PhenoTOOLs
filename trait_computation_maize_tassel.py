@@ -240,6 +240,9 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         
 
     
+    #define size of the kernel used ofr dailation
+    size_kernel_mask = 10
+    
     #if mask contains mutiple non-conected parts, combine them into one. 
     contours, hier = cv2.findContours(img_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -248,7 +251,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         print("mask contains mutiple non-conected parts, combine them into one\n")
         
         # create an size 10 kernel
-        kernel = np.ones((10,10), np.uint8)
+        kernel = np.ones((size_kernel_mask, size_kernel_mask), np.uint8)
 
         # image dilation
         dilation = cv2.dilate(img_thresh.copy(), kernel, iterations = 1)
@@ -1311,7 +1314,10 @@ def extract_traits(image_file):
         #print(filename)
         cv2.imwrite(result_file, trait_img)
         
-        
+        # save segmentation result
+        result_file = (save_path + base_name + '_image_mask_2' + file_extension)
+        cv2.imwrite(result_file, image_mask)
+    
         #get the medial axis of the contour
         (image_skeleton, skeleton, image_bw) = skeleton_bw(image_mask)
 
@@ -1620,28 +1626,28 @@ if __name__ == '__main__':
         sheet_cm.title = "trait_cm"
 
     sheet_pixel.cell(row = 1, column = 1).value = 'filename'
-    sheet_pixel.cell(row = 1, column = 2).value = 'tag info'
-    sheet_pixel.cell(row = 1, column = 3).value = 'tassel area'
-    sheet_pixel.cell(row = 1, column = 4).value = 'tassel area ratio'
-    sheet_pixel.cell(row = 1, column = 5).value = 'average width'
-    sheet_pixel.cell(row = 1, column = 6).value = 'average height'
-    sheet_pixel.cell(row = 1, column = 7).value = 'number of branches'
-    sheet_pixel.cell(row = 1, column = 8).value = 'average branch length'
-    sheet_pixel.cell(row = 1, column = 9).value = 'average coins width'
-    sheet_pixel.cell(row = 1, column = 10).value = 'coin size'
-    sheet_pixel.cell(row = 1, column = 11).value = 'pixel/cm ratio'
+    sheet_pixel.cell(row = 1, column = 2).value = 'tag_info'
+    sheet_pixel.cell(row = 1, column = 3).value = 'tassel_area'
+    sheet_pixel.cell(row = 1, column = 4).value = 'tassel_area ratio'
+    sheet_pixel.cell(row = 1, column = 5).value = 'average_width'
+    sheet_pixel.cell(row = 1, column = 6).value = 'average_height'
+    sheet_pixel.cell(row = 1, column = 7).value = 'number_branches'
+    sheet_pixel.cell(row = 1, column = 8).value = 'average_branch_length'
+    sheet_pixel.cell(row = 1, column = 9).value = 'average_coins_width'
+    sheet_pixel.cell(row = 1, column = 10).value = 'coin_size'
+    sheet_pixel.cell(row = 1, column = 11).value = 'pixel/cm_ratio'
 
     sheet_cm.cell(row = 1, column = 1).value = 'filename'
-    sheet_cm.cell(row = 1, column = 2).value = 'tag info'
-    sheet_cm.cell(row = 1, column = 3).value = 'tassel area'
-    sheet_cm.cell(row = 1, column = 4).value = 'tassel area ratio'
-    sheet_cm.cell(row = 1, column = 5).value = 'average width'
-    sheet_cm.cell(row = 1, column = 6).value = 'average height'
-    sheet_cm.cell(row = 1, column = 7).value = 'number of branches'
-    sheet_cm.cell(row = 1, column = 8).value = 'average branch length'
-    sheet_cm.cell(row = 1, column = 9).value = 'average coins width'
-    sheet_cm.cell(row = 1, column = 10).value = 'coin size'
-    sheet_cm.cell(row = 1, column = 11).value = 'pixel/cm ratio'
+    sheet_cm.cell(row = 1, column = 2).value = 'tag_info'
+    sheet_cm.cell(row = 1, column = 3).value = 'tassel_area'
+    sheet_cm.cell(row = 1, column = 4).value = 'tassel_area_ratio'
+    sheet_cm.cell(row = 1, column = 5).value = 'average_width'
+    sheet_cm.cell(row = 1, column = 6).value = 'average_height'
+    sheet_cm.cell(row = 1, column = 7).value = 'number_of_branches'
+    sheet_cm.cell(row = 1, column = 8).value = 'average_branch_length'
+    sheet_cm.cell(row = 1, column = 9).value = 'average_coins_width'
+    sheet_cm.cell(row = 1, column = 10).value = 'coin_size'
+    sheet_cm.cell(row = 1, column = 11).value = 'pixel/cm_ratio'
 
 
 
