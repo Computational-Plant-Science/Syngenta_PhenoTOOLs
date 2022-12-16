@@ -1042,7 +1042,7 @@ def skeleton_bw(thresh):
 
 
 
-def outlier_doubleMAD(data, thresh = 3.5):
+def outlier_doubleMAD(data, thresh):
     
     """outlier removal 
     Calculates median to divide data into 2 halves.(skew conditions handled)
@@ -1052,7 +1052,7 @@ def outlier_doubleMAD(data, thresh = 3.5):
     
     FOR ASSYMMETRIC DISTRIBUTION
     
-    Inputs: the actual data Points array and thresh value
+    Inputs: the actual data Points array and thresh value, and thresh hold value
 
     Returns : filtered array excluding the outliers
 
@@ -1107,8 +1107,10 @@ def skeleton_graph(image_skeleton):
     
     sub_branch_branch_distance = sub_branch["branch-distance"].tolist()
  
+    distance_threshold = 0.8
+  
     # remove outliers in branch distance 
-    outlier_list = outlier_doubleMAD(sub_branch_branch_distance, thresh = 3.5)
+    outlier_list = outlier_doubleMAD(sub_branch_branch_distance, thresh = distance_threshold)
     
     indices = [i for i, x in enumerate(outlier_list) if x]
     
@@ -1449,7 +1451,7 @@ if __name__ == '__main__':
     ap.add_argument('-n', '--num-clusters', type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-min', '--min_size', type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin size in cm')
-    
+    ap.add_argument('-dt', '--distance_threshold', type = int, required = False, default = 3.5,  help = 'distance based threshold value for filtering branches')
     args = vars(ap.parse_args())
     
     
@@ -1463,6 +1465,7 @@ if __name__ == '__main__':
     min_size = args['min_size']
     coin_size = args['coin_size']
     
+    distance_threshold = args['distance_threshold']
     
     # path of the marker (coin), default path will be '/marker_template/marker.png' and '/marker_template/barcode.png'
     # can be changed based on requirement
@@ -1470,9 +1473,9 @@ if __name__ == '__main__':
 
     
     #setup marker path to load template
-    template_path = file_path + coin_path
+    #template_path = file_path + coin_path
     barcode_path = file_path + barcode_path
-    
+    '''
     try:
         # check to see if file is readable
         with open(template_path) as tempFile:
@@ -1485,7 +1488,7 @@ if __name__ == '__main__':
         
         print("Error reading the Template file {0}: {1}".format(template_path, err))
         exit(0)
-
+    '''
     
     try:
         # check to see if file is readable
