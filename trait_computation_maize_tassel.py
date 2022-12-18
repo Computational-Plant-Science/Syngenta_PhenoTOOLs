@@ -1107,7 +1107,7 @@ def skeleton_graph(image_skeleton):
     
     sub_branch_branch_distance = sub_branch["branch-distance"].tolist()
  
-    distance_threshold = 0.8
+    distance_threshold = 0.6
   
     # remove outliers in branch distance 
     outlier_list = outlier_doubleMAD(sub_branch_branch_distance, thresh = distance_threshold)
