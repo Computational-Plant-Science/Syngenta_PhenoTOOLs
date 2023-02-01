@@ -207,6 +207,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     #thresh_cleaned = (thresh)
     
+    
     # clean the border of mask image
     if np.count_nonzero(thresh) > 0:
         
@@ -216,7 +217,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     # get the connected Components in the mask image
     nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
-
+    
     
     # stats[0], centroids[0] are for the background label. ignore
     # cv2.CC_STAT_LEFT, cv2.CC_STAT_TOP, cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT
@@ -331,51 +332,58 @@ def circle_detection(image):
     # detect circles in the image
     circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp, minDist)
     
-    # initialize diameter of detected circle
-    diameter_circle = 0
-    
-    
     circle_center_coord = []
     circle_center_radius = []
     idx_closest = 0
     
-    
-    # convert the (x, y) coordinates and radius of the circles to integers
-    circles = np.round(circles[0, :]).astype("int")
-    
-    # loop over the (x, y) coordinates and radius of the circles
-    for (x, y, r) in circles:
+    # At leaset one circle is found
+    if circles is not None:
         
-        coord = (x, y)
+        # Get the (x, y, r) as integers, convert the (x, y) coordinates and radius of the circles to integers
+        circles = np.round(circles[0, :]).astype("int")
+       
+        if len(circles) < 2:
+           
+            print("Only one circle was found!\n")
+           
+        else:
+            
+            print("More than one circles were found!\n")
         
-        circle_center_coord.append(coord)
-        circle_center_radius.append(r)
-    
-    
-    # choose the left bottom circle if more than one circles are detected 
-    if len(circles) > 1:
+            idx_closest = 0
         
-        #finding closest point among the center list of the circles to the right-bottom of the image
-        idx_closest = closest_center((0 + img_width, 0 + img_height), circle_center_coord)
-    
+            cv2.circle(output, (x, y), r, (0, 255, 0), 2)
+          
+        # loop over the circles and the (x, y) coordinates to get radius of the circles
+        for (x, y, r) in circles:
+            
+            coord = (x, y)
+            
+            circle_center_coord.append(coord)
+            circle_center_radius.append(r)
+
+        if idx_closest == 0:
+
+            print("Circle marker with radius = {} was detected!\n".format(circle_center_radius[idx_closest]))
+        
+        # draw the circle in the output image, then draw a center
+        circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], circle_center_radius[idx_closest], (0, 255, 0), 4)
+        circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], 5, (0, 128, 255), -1)
+
+        # create an empty mask image and fill the detected connected components
+        mask = np.zeros([img_width, img_height], dtype = np.uint8)
+
+        # compute the diameter of coin
+        diameter_circle = circle_center_radius[idx_closest]*2
+        
     else:
         
-        # ensure at least some circles were found
-        if circles is not None and len(circles) > 0:
-            idx_closest = 0
-    
-    #print("idx_closest = {}\n".format(idx_closest))
-    
-    # draw the circle in the output image, then draw a center
-    circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], circle_center_radius[idx_closest], (0, 255, 0), 4)
-    circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], 5, (0, 128, 255), -1)
-    
-    # create an empty mask image and fill the detected connected components
-    mask = np.zeros([img_width, img_height], dtype = np.uint8)
-    
-    # compute the diameter of coin
-    diameter_circle = circle_center_radius[idx_closest]*2
-    
+        print("No circle was found!\n")
+        
+        circle_detection_img = output
+        
+        diameter_circle = 0
+   
     
     return circles, circle_detection_img, diameter_circle
 
@@ -1107,7 +1115,7 @@ def skeleton_graph(image_skeleton):
     
     sub_branch_branch_distance = sub_branch["branch-distance"].tolist()
  
-    distance_threshold = 0.6
+    distance_threshold = 1.0
   
     # remove outliers in branch distance 
     outlier_list = outlier_doubleMAD(sub_branch_branch_distance, thresh = distance_threshold)
@@ -1338,8 +1346,12 @@ def extract_traits(image_file):
         # convert skeleton to graph
         (branch_data, n_branch, branch_length) = skeleton_graph(image_skeleton)
         
-        avg_branch_length = int(sum(branch_length)/len(branch_length))
-
+        
+        if len(branch_length) > 0:
+            
+            avg_branch_length = int(sum(branch_length)/len(branch_length))
+        else:
+            avg_branch_length = 0
 
         #img_hist = branch_data.hist(column = 'branch-distance', by = 'branch-type', bins = 100)
         #result_file = (save_path + base_name + '_hist' + file_extension)
@@ -1364,25 +1376,51 @@ def extract_traits(image_file):
     
     
     ###################################################################################################
-    # detect coin and barcode uisng template mathcing method
+    # detect coin uisng template mathcing method
+    
+    # method for template matching 
+    methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
+        'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
+    
     
     # define right bottom area for coin detection
     x = int(img_width*0.5)
-    y = int(img_height*0.5)
+    #y = int(img_height*0.5)
+    y = int(0)
     w = int(img_width*0.5)
     h = int(img_height*0.5)
     
     roi_image = region_extracted(orig, x, y, w, h)
     
+    #roi_image = orig
+    
     # apply gamma correction for image region with coin
-    gamma = 1.5
+    gamma = 0.5
     gamma = gamma if gamma > 0 else 0.1
     enhanced_region = adjust_gamma(roi_image.copy(), gamma=gamma)
     
-    (circles, circle_detection_img, diameter_circle) = circle_detection(enhanced_region) 
+    (circles, circle_detection_img, diameter_circle) = circle_detection(enhanced_region)
     
-    #print("coin_size = {}".format(coin_size))
+
     
+    if diameter_circle == 0 and coin_image_option == 1:
+    
+        print("Hough Circles detection for coin failed,using template matching method instead...\n")
+        
+        # detect the barcode object based on template image
+        (circle_detection_img_hf, thresh_coin, coin_width_contour, diameter_circle_tp) = marker_detect(enhanced_region, tp_coin, methods[0], 0.8)
+    
+        if diameter_circle_tp == 0:
+            pixel_cm_ratio = 1
+            coins_width_avg = 1
+        else:
+            circle_detection_img = circle_detection_img_hf
+            diameter_circle = diameter_circle_tp
+    else:
+        
+        print("Hough Circles detection sucessful...\n")
+
+    # compute coin related traits
     pixel_cm_ratio = diameter_circle/coin_size
     
     coins_width_avg = diameter_circle
@@ -1395,37 +1433,43 @@ def extract_traits(image_file):
     print("The width of coin in the marker image is {:.0f} × {:.0f} pixels\n".format(diameter_circle, diameter_circle))
     
     
-    
+    ###################################################################################################
+    # detect barcode uisng template mathcing method
     # define left bottom area for barcode detection
-    x = 0
-    y = int(img_height*0.5)
-    w = int(img_width*0.5)
-    h = int(img_height*0.5)
     
-    roi_image = region_extracted(orig, x, y, w, h)
-    
-    # method for template matching 
-    methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
-        'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
-    
-    # apply gamma correction for image region with coin
-    gamma = 1.5
-    gamma = gamma if gamma > 0 else 0.1
-    enhanced_region = adjust_gamma(roi_image.copy(), gamma=gamma)
-    
-    # detect the barcode object based on template image
-    (marker_barcode_img, thresh_barcode, barcode_width_contour, barcode_width_circle) = marker_detect(enhanced_region, tp_barcode, methods[0], 0.8)
-    
-    # save result
-    result_file = (save_path + base_name + '_barcode' + file_extension)
-    cv2.imwrite(result_file, marker_barcode_img)
-    
-    # save result
-    #result_file = (save_path + base_name + '_barcode_mask' + file_extension)
-    #cv2.imwrite(result_file, thresh_barcode)
-    
-    # parse barcode image using pylibdmtx lib
-    tag_info = barcode_detect(marker_barcode_img)
+    if barcode_image_option == 1:
+        x = 0
+        y = int(img_height*0.5)
+        w = int(img_width*0.5)
+        h = int(img_height*0.5)
+        
+        roi_image = region_extracted(orig, x, y, w, h)
+        
+        
+        
+        # apply gamma correction for image region with coin
+        gamma = 1.5
+        gamma = gamma if gamma > 0 else 0.1
+        enhanced_region = adjust_gamma(roi_image.copy(), gamma=gamma)
+        
+        # detect the barcode object based on template image
+        (marker_barcode_img, thresh_barcode, barcode_width_contour, barcode_width_circle) = marker_detect(enhanced_region, tp_barcode, methods[0], 0.8)
+        
+        # save result
+        result_file = (save_path + base_name + '_barcode' + file_extension)
+        cv2.imwrite(result_file, marker_barcode_img)
+        
+        # save result
+        #result_file = (save_path + base_name + '_barcode_mask' + file_extension)
+        #cv2.imwrite(result_file, thresh_barcode)
+        
+        # parse barcode image using pylibdmtx lib
+        
+        tag_info = barcode_detect(marker_barcode_img)
+    else:
+        
+        print("barcode information was not readable!\n")
+        tag_info = 'Unreadable'
 
     ####################################################
     
@@ -1441,7 +1485,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-p", "--path", required = True,    help = "path to image file")
     ap.add_argument("-ft", "--filetype", required = True,    help = "Image filetype")
-    ap.add_argument('-mk', '--marker', required = False,  default ='/marker_template/coin.png',  help = "Marker file name")
+    ap.add_argument('-mk', '--marker', required = False,  default ='/marker_template/coin.png',  help = "Coin marker file name")
     ap.add_argument('-bc', '--barcode', required = False,  default ='/marker_template/barcode.png',  help = "Barcode file name")
     ap.add_argument("-r", "--result", required = False,    help="result path")
     ap.add_argument('-s', '--color-space', type = str, required = False, default ='lab', help='Color space to use: BGR, HSV, Lab (default), YCrCb (YCC)')
@@ -1472,23 +1516,12 @@ if __name__ == '__main__':
     global  tp_coin, tp_barcode
 
     
+    barcode_image_option = 0
+    coin_image_option = 0
     #setup marker path to load template
-    #template_path = file_path + coin_path
+    coin_path = file_path + coin_path
     barcode_path = file_path + barcode_path
-    '''
-    try:
-        # check to see if file is readable
-        with open(template_path) as tempFile:
 
-            # Read the template 
-            tp_coin = cv2.imread(template_path, 0)
-            print("Template loaded successfully...")
-            
-    except IOError as err:
-        
-        print("Error reading the Template file {0}: {1}".format(template_path, err))
-        exit(0)
-    '''
     
     try:
         # check to see if file is readable
@@ -1496,14 +1529,32 @@ if __name__ == '__main__':
 
             # Read the template 
             tp_barcode = cv2.imread(barcode_path, 0)
-            print("Barcode loaded successfully...\n")
+            print("Barcode template loaded successfully...\n")
+            barcode_image_option = 1
+            
             
     except IOError as err:
         
-        print("Error reading the Barcode file {0}: {1}".format(barcode_path, err))
-        exit(0)
+        print("Error reading Barcode template file {0}: {1}\n".format(barcode_path, err))
+        
+        #exit(0)
+        
     
-    
+    try:
+        # check to see if file is readable
+        with open(coin_path) as tempFile:
+
+            # Read the template 
+            tp_coin = cv2.imread(coin_path, 0)
+            print("Coin template loaded successfully...\n")
+            coin_image_option = 1
+            
+            
+    except IOError as err:
+        print("Error reading  Coin template file was found {0}: {1}\n".format(barcode_path, err))
+
+
+
 
     #accquire image file list
     filetype = '*.' + ext
