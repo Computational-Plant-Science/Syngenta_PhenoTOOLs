@@ -1256,7 +1256,7 @@ def skeleton_graph(image_skeleton):
 
     n_branch = branch_type_list.count(1)
     '''
-    '''
+    
     ####################################################################
     # find the dominant cluster branches based on the branch length
     k = 2
@@ -1281,17 +1281,17 @@ def skeleton_graph(image_skeleton):
     sub_branch_dominant_distance = [i for j, i in enumerate(sub_branch_branch_distance) if j not in indices]
     
     print("Branch graph info : {0}\n".format(sub_branch_dominant))
-    '''
-    ########################################################################
     
+    ########################################################################
+    '''
     sub_branch_dominant = sub_branch
     sub_branch_dominant_distance = sub_branch_branch_distance
+    '''
+    
 
     branch_type_list = sub_branch_dominant["branch-type"].tolist()
 
     n_branch = branch_type_list.count(1)
-    
-    
     
     
     return sub_branch_dominant, n_branch, sub_branch_dominant_distance
@@ -1421,13 +1421,14 @@ def extract_traits(image_file):
     # load the input image 
     image = cv2.imread(image_file)
     
+    '''
     # Non-local Means Denoising algorithm to remove noise in the image.
     image = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
     
     # save binray mask result
     result_file = (save_path + base_name + '_denoise' + file_extension) 
     cv2.imwrite(result_file, image)
-        
+    '''
     #make backup image
     orig = image.copy()
     
@@ -1526,7 +1527,7 @@ def extract_traits(image_file):
         ###################################################
         (N, bins, patches) = his_plot(branch_length, save_path, base_name)
         
-        print(branch_length)
+        #print(branch_length)
 
 
         fig = plt.plot()
@@ -1556,21 +1557,18 @@ def extract_traits(image_file):
     
     # define right bottom area for coin detection
     x = int(img_width*0.5)
-    #y = int(img_height*0.5)
-    y = int(0)
+    y = int(img_height*0.5)
     w = int(img_width*0.5)
-    h = int(img_height*0.7)
+    h = int(img_height*0.5)
     
     roi_image = region_extracted(orig, x, y, w, h)
     
-    #roi_image = orig
-    
     # apply gamma correction for image region with coin
-    gamma = 0.5
+    gamma = 1.5
     gamma = gamma if gamma > 0 else 0.1
     enhanced_region = adjust_gamma(roi_image.copy(), gamma=gamma)
     
-    (circles, circle_detection_img, diameter_circle) = circle_detection(enhanced_region)
+    (circles, circle_detection_img, diameter_circle) = circle_detection(enhanced_region) 
     
 
     
