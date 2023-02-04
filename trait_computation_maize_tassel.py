@@ -58,8 +58,11 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+from matplotlib import colors
+from matplotlib.ticker import PercentFormatter
 from matplotlib import collections
+
+import kmeans1d
 
 import math
 import openpyxl
@@ -205,16 +208,16 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
     ret, thresh = cv2.threshold(kmeansImage,0,255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     
-    #thresh_cleaned = (thresh)
+    thresh_cleaned = (thresh)
     
-    
+    '''
     # clean the border of mask image
     if np.count_nonzero(thresh) > 0:
         
         thresh_cleaned = clear_border(thresh)
     else:
         thresh_cleaned = thresh
-    
+    '''
     # get the connected Components in the mask image
     nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
     
@@ -986,7 +989,7 @@ def marker_detect(img_ori, template, method, selection_threshold):
 
 
 
-def skeleton_bw(thresh):
+def skeleton_bw(image_mask):
 
     """compute skeleton from binary mask image
     
@@ -1015,13 +1018,13 @@ def skeleton_bw(thresh):
 
     ##################################
     #define kernel size
-    kernel_size = 15
+    kernel_size = 25
     
     # taking a matrix of size 25 as the kernel
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
     
     # image dilation
-    dilation = cv2.dilate(thresh.copy(), kernel, iterations = 1)
+    dilation = cv2.dilate(image_mask.copy(), kernel, iterations = 1)
         
     # image closing
     image_bw = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel)
@@ -1077,9 +1080,121 @@ def outlier_doubleMAD(data, thresh):
     data_mad[data > m] = right_mad
     modified_z_score = 0.6745 * abs_dev / data_mad
     modified_z_score[data == m] = 0
-    return modified_z_score > thresh
+    return modified_z_score < thresh
 
 
+
+def balanced_hist_thresholding(b):
+    
+    # Starting point of histogram
+    i_s = np.min(np.where(b[0]>0))
+    
+    # End point of histogram
+    i_e = np.max(np.where(b[0]>0))
+    
+    # Center of histogram
+    i_m = (i_s + i_e)//2
+    
+    # Left side weight
+    w_l = np.sum(b[0][0:i_m+1])
+    
+    # Right side weight
+    w_r = np.sum(b[0][i_m+1:i_e+1])
+    
+    # Until starting point not equal to endpoint
+    while (i_s != i_e):
+        # If right side is heavier
+        if (w_r > w_l):
+            # Remove the end weight
+            w_r -= b[0][i_e]
+            i_e -= 1
+            # Adjust the center position and recompute the weights
+            if ((i_s+i_e)//2) < i_m:
+                w_l -= b[0][i_m]
+                w_r += b[0][i_m]
+                i_m -= 1
+        else:
+            # If left side is heavier, remove the starting weight
+            w_l -= b[0][i_s]
+            i_s += 1
+            # Adjust the center position and recompute the weights
+            if ((i_s+i_e)//2) >= i_m:
+                w_l += b[0][i_m+1]
+                w_r -= b[0][i_m+1]
+                i_m += 1
+    return i_m
+    
+
+
+
+def his_plot(data_list, save_path, base_name):
+    
+  
+    legend = ['Path length histogram distribution']
+
+    N_points = len(data_list)
+    x = data_list
+    n_bins = 20
+    
+    
+    # Creating histogram
+    fig, axs = plt.subplots(1, 1,
+                        figsize =(10, 7),
+                        tight_layout = True)
+
+
+    # Remove axes splines
+    for s in ['top', 'bottom', 'left', 'right']:
+        axs.spines[s].set_visible(False)
+
+    # Remove x, y ticks
+    axs.xaxis.set_ticks_position('none')
+    axs.yaxis.set_ticks_position('none')
+
+    # Add padding between axes and labels
+    axs.xaxis.set_tick_params(pad = 5)
+    axs.yaxis.set_tick_params(pad = 10)
+
+    # Add x, y gridlines
+    axs.grid(b = True, color ='grey',
+        linestyle ='-.', linewidth = 0.5,
+        alpha = 0.6)
+
+    '''
+    bin_size = 0.1
+    min_edge = 0.0
+    max_edge = 7.0
+    Nplus1 = (max_edge-min_edge)/bin_size + 1
+    bin_list = np.linspace(min_edge, max_edge, int(Nplus1))
+    '''
+
+    #fixed_bins = [0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+    
+    # Creating histogram
+    (N, bins, patches) = axs.hist(x, bins = n_bins)
+    
+    #N, bins, patches = axs.hist(x, bins = bin_list)
+    
+    #axs.set_ylim([0, 10000])
+    
+
+    # Adding extra features   
+    plt.xlabel("Graph path length")
+    plt.ylabel("Counts")
+    plt.legend(legend)
+    plt.title('Path length distribution')
+    
+
+    # create file using sub folder name
+    path_histogram = (save_path + base_name + '_his.png')
+    
+    plt.savefig(path_histogram)
+    
+    return N, bins, patches
+    
+    
+    
+    
 
 def skeleton_graph(image_skeleton):
     
@@ -1108,14 +1223,21 @@ def skeleton_graph(image_skeleton):
 
     #get brach data
     branch_data = summarize(Skeleton(image_skeleton))
+    
     #print(branch_data)
     
-    #select end branch
+    #select branches with end points
     sub_branch = branch_data.loc[branch_data['branch-type'] == 1]
     
+    # get branch distances
     sub_branch_branch_distance = sub_branch["branch-distance"].tolist()
- 
-    distance_threshold = 1.0
+    
+    print("sub_branch_branch_distance = {}\n".format(sub_branch_branch_distance))   
+    
+    #########################################
+    '''
+    distance_threshold = 0.8
+
   
     # remove outliers in branch distance 
     outlier_list = outlier_doubleMAD(sub_branch_branch_distance, thresh = distance_threshold)
@@ -1133,9 +1255,46 @@ def skeleton_graph(image_skeleton):
     branch_type_list = sub_branch_cleaned["branch-type"].tolist()
 
     n_branch = branch_type_list.count(1)
+    '''
+    '''
+    ####################################################################
+    # find the dominant cluster branches based on the branch length
+    k = 2
 
+    (clusters, centroids) = kmeans1d.cluster(sub_branch_branch_distance, k)
+
+    print("clusters labels = {}\n".format(clusters))   
+    print("clusters labels = {}\n".format(centroids))  
     
-    return branch_data, n_branch, sub_branch_branch_distance_cleaned
+    # get the max center value of branch length cluster
+    max_index_max_centroids = centroids.index(max(centroids))
+    
+    print("max_index_max_centroids = {}\n".format(max_index_max_centroids))
+
+    # get the indexes of dominant cluster branches among all branches
+    indices = [i for i, val in enumerate(clusters) if val!=max_index_max_centroids] 
+    
+    print("Index of branches to be removed = {}\n".format(indices))
+    
+    sub_branch_dominant = sub_branch.drop(sub_branch.index[indices])
+    
+    sub_branch_dominant_distance = [i for j, i in enumerate(sub_branch_branch_distance) if j not in indices]
+    
+    print("Branch graph info : {0}\n".format(sub_branch_dominant))
+    '''
+    ########################################################################
+    
+    sub_branch_dominant = sub_branch
+    sub_branch_dominant_distance = sub_branch_branch_distance
+
+    branch_type_list = sub_branch_dominant["branch-type"].tolist()
+
+    n_branch = branch_type_list.count(1)
+    
+    
+    
+    
+    return sub_branch_dominant, n_branch, sub_branch_dominant_distance
 
 
 
@@ -1262,6 +1421,13 @@ def extract_traits(image_file):
     # load the input image 
     image = cv2.imread(image_file)
     
+    # Non-local Means Denoising algorithm to remove noise in the image.
+    image = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
+    
+    # save binray mask result
+    result_file = (save_path + base_name + '_denoise' + file_extension) 
+    cv2.imwrite(result_file, image)
+        
     #make backup image
     orig = image.copy()
     
@@ -1269,6 +1435,8 @@ def extract_traits(image_file):
     img_height, img_width, img_channels = orig.shape
     
     #source_image = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
+    
+
     
     # parse input arguments
     args_colorspace = args['color_space']
@@ -1324,10 +1492,6 @@ def extract_traits(image_file):
         #print(filename)
         cv2.imwrite(result_file, trait_img)
         
-        # save segmentation result
-        result_file = (save_path + base_name + '_image_mask_2' + file_extension)
-        cv2.imwrite(result_file, image_mask)
-    
         #get the medial axis of the contour
         (image_skeleton, skeleton, image_bw) = skeleton_bw(image_mask)
 
@@ -1352,12 +1516,19 @@ def extract_traits(image_file):
             avg_branch_length = int(sum(branch_length)/len(branch_length))
         else:
             avg_branch_length = 0
-
-        #img_hist = branch_data.hist(column = 'branch-distance', by = 'branch-type', bins = 100)
-        #result_file = (save_path + base_name + '_hist' + file_extension)
-        #plt.savefig(result_file, transparent = True, bbox_inches = 'tight', pad_inches = 0)
-        #plt.close()
         
+        '''
+        img_hist = branch_data.hist(column = 'branch-distance', by = 'branch-type', bins = 10)
+        result_file = (save_path + base_name + '_hist' + file_extension)
+        plt.savefig(result_file, transparent = True, bbox_inches = 'tight', pad_inches = 0)
+        plt.close()
+        '''
+        ###################################################
+        (N, bins, patches) = his_plot(branch_length, save_path, base_name)
+        
+        print(branch_length)
+
+
         fig = plt.plot()
         source_image = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
         img_overlay = draw.overlay_euclidean_skeleton_2d(source_image, branch_data, skeleton_color_source = 'branch-distance', skeleton_colormap = 'hsv')
@@ -1388,7 +1559,7 @@ def extract_traits(image_file):
     #y = int(img_height*0.5)
     y = int(0)
     w = int(img_width*0.5)
-    h = int(img_height*0.5)
+    h = int(img_height*0.7)
     
     roi_image = region_extracted(orig, x, y, w, h)
     
@@ -1493,7 +1664,7 @@ if __name__ == '__main__':
                                                                        + ' 1 is the second channel, etc. E.g., if BGR color space is used, "02" ' 
                                                                        + 'selects channels B and R. (default "all")')
     ap.add_argument('-n', '--num-clusters', type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
-    ap.add_argument('-min', '--min_size', type = int, required = False, default = 35000,  help = 'min size of object to be segmented.')
+    ap.add_argument('-min', '--min_size', type = int, required = False, default = 55000,  help = 'min size of object to be segmented.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin size in cm')
     ap.add_argument('-dt', '--distance_threshold', type = int, required = False, default = 3.5,  help = 'distance based threshold value for filtering branches')
     args = vars(ap.parse_args())
