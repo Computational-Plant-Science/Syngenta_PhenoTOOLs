@@ -1018,7 +1018,7 @@ def skeleton_bw(image_mask):
 
     ##################################
     #define kernel size
-    kernel_size = 25
+    #kernel_size = 25
     
     # taking a matrix of size 25 as the kernel
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
@@ -1282,12 +1282,13 @@ def skeleton_graph(image_skeleton):
     
     print("Branch graph info : {0}\n".format(sub_branch_dominant))
     
+    
     ########################################################################
-    '''
+    
     sub_branch_dominant = sub_branch
     sub_branch_dominant_distance = sub_branch_branch_distance
-    '''
     
+    ###########################################################################
 
     branch_type_list = sub_branch_dominant["branch-type"].tolist()
 
@@ -1561,6 +1562,13 @@ def extract_traits(image_file):
     w = int(img_width*0.5)
     h = int(img_height*0.5)
     
+    '''
+    # define right up area for coin detection
+    x = int(img_width*0.5)
+    y = int(0)
+    w = int(img_width*0.5)
+    h = int(img_height*0.5)
+    '''
     roi_image = region_extracted(orig, x, y, w, h)
     
     # apply gamma correction for image region with coin
@@ -1665,6 +1673,8 @@ if __name__ == '__main__':
     ap.add_argument('-min', '--min_size', type = int, required = False, default = 55000,  help = 'min size of object to be segmented.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin size in cm')
     ap.add_argument('-dt', '--distance_threshold', type = int, required = False, default = 3.5,  help = 'distance based threshold value for filtering branches')
+    ap.add_argument('-ks', '--kernel_size', type = int, required = False, default = 25,  help = 'kernel size to smooth branches')
+    
     args = vars(ap.parse_args())
     
     
@@ -1677,8 +1687,9 @@ if __name__ == '__main__':
     
     min_size = args['min_size']
     coin_size = args['coin_size']
-    
+
     distance_threshold = args['distance_threshold']
+    kernel_size = args['kernel_size']
     
     # path of the marker (coin), default path will be '/marker_template/marker.png' and '/marker_template/barcode.png'
     # can be changed based on requirement

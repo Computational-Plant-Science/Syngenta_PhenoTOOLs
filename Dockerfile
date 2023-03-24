@@ -56,7 +56,7 @@ RUN pip3 install numpy \
     psutil \
     natsort \
     pathlib \
-    pandas 
+    kmeans1d
 
 
 WORKDIR /opt/Syngenta_PhenoTOOLs/
