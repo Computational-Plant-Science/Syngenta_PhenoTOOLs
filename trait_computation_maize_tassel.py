@@ -1526,7 +1526,7 @@ def extract_traits(image_file):
         plt.close()
         '''
         ###################################################
-        (N, bins, patches) = his_plot(branch_length, save_path, base_name)
+        #(N, bins, patches) = his_plot(branch_length, save_path, base_name)
         
         #print(branch_length)
 
