@@ -38,7 +38,7 @@ docker pull computationalplantscience/syngenta_phenotools
 
 link your test image path to the /images/ path inside the docker container
  ```shell
-docker run -v /path to test image:/images -it syngenta_phenotools
+docker run -v /path_to_your_test_image:/images -it syngenta_phenotools
 ```
 (For example: docker run -v /your local directory to cloned "Syngenta_PhenoTOOLs"/Syngenta_PhenoTOOLs/sample_test/Ear_test:/images -it syngenta_phenotools)
 
