@@ -44,11 +44,13 @@ from skimage.measure import regionprops
 
 from scipy.spatial import distance as dist
 from scipy import optimize
-from scipy import ndimage
+from scipy import ndimage 
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import pdist
 
-from skan import skeleton_to_csgraph, Skeleton, summarize, draw
+from skan.csr import skeleton_to_csgraph
+from skan import Skeleton, summarize, draw
+
 
 import imutils
 from imutils import perspective
@@ -1439,25 +1441,40 @@ def watershed_seg(orig, min_distance_value):
     
     thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
-    
     # compute the exact Euclidean distance from every binary pixel to the nearest zero pixel, then find peaks in this
     # distance map
     D = ndimage.distance_transform_edt(thresh)
     
-    #localMax = peak_local_max(D, indices = False, min_distance = min_distance_value,  labels = thresh)
+    
     
     localMax = peak_local_max(D, indices = False, min_distance = min_distance_value,  labels = thresh)
-     
-    # perform a connected component analysis on the local peaks, using 8-connectivity, then appy the Watershed algorithm
-    markers = ndimage.label(localMax, structure = np.ones((3, 3)))[0]
     
+    markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
+    
+    labels = watershed(-D, markers, mask=thresh)
+    
+    
+    '''
+    max_coords = peak_local_max(D, min_distance = min_distance_value, labels = thresh)
+    
+    local_maxima = np.zeros_like(image, dtype=bool)
+    
+    local_maxima[tuple(max_coords.T)] = True
+    
+    # perform a connected component analysis on the local peaks, using 8-connectivity, then appy the Watershed algorithm
+    markers = ndimage.label(local_maxima)[0]  
+    
+   
     #print("markers")
     #print(type(markers))
     
-    labels = watershed(-D, markers, mask = thresh)
+    labels = watershed(-D, markers, mask = img_as_float(thresh))
     
-    #print("[INFO] {} unique segments found\n".format(len(np.unique(labels)) - 1))
-    
+    from skimage.color import label2rgb
+    labeled_img = label2rgb(labeled_coins, image=coins)
+    '''
+    print("[INFO] {} unique segments found\n".format(len(np.unique(labels)) - 1))
+   
     #Map component labels to hue val
     label_hue = np.uint8(128*labels/np.max(labels))
     blank_ch = 255*np.ones_like(label_hue)
@@ -1468,7 +1485,7 @@ def watershed_seg(orig, min_distance_value):
 
     # set background label to black
     labeled_img[label_hue==0] = 0
-
+   
     #define result path for labeled images
     #result_img_path = save_path_label + str(filename[0:-4]) + '_label.jpg'
 
