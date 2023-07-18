@@ -27,7 +27,6 @@ RUN DEBIAN_FRONTEND="noninteractive" TZ="America/New_York" apt-get install -y \
     python3-setuptools \
     python3-pip \
     python3 \
-    python3-numexpr \
     libgl1-mesa-glx \
     libsm6 \
     libxext6 \

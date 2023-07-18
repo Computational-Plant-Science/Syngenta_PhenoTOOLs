@@ -179,6 +179,13 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     # get the dimension of image        
     (width, height, n_channel) = image.shape
     
+    
+    if n_channel > 1:
+        
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image
+    
     # Flatten the 2D image array into an MxN feature vector, where M is the number of pixels and N is the dimension (number of channels).
     reshaped = image.reshape(image.shape[0] * image.shape[1], image.shape[2])
     
@@ -218,6 +225,8 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     else:
         thresh_cleaned = thresh
     '''
+    
+    '''
     # get the connected Components in the mask image
     nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
     
@@ -241,7 +250,45 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
         if (sizes[i] >= min_size):
         
             img_thresh[output == i + 1] = 255
+    '''
+    
+    
+    (numLabels, labels, stats, centroids) = cv2.connectedComponentsWithStats(thresh_cleaned, connectivity = 8)
+    
+    max_size = width*height
+    
+    # initialize an output mask 
+    mask = np.zeros(gray.shape, dtype="uint8")
+    
+    # loop over the number of unique connected component labels, skipping
+    # over the first label (as label zero is the background)
+    for i in range(1, numLabels):
+    # extract the connected component statistics for the current label
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+    
+    
+        # ensure the width, height, and area are all neither too small
+        # nor too big
+        keepWidth = w > 500 and w < 50000
+        keepHeight = h > 2500 and h < 50000
+        keepArea = area > min_size and area < max_size
         
+        #if all((keepWidth, keepHeight, keepArea)):
+        # ensure the connected component we are examining passes all three tests
+        if all((keepWidth, keepHeight, keepArea)):
+        #if keepArea:
+        # construct a mask for the current connected component and
+        # then take the bitwise OR with the mask
+            print("[INFO] keeping connected component '{}'".format(i))
+            componentMask = (labels == i).astype("uint8") * 255
+            mask = cv2.bitwise_or(mask, componentMask)
+            
+
+    img_thresh = mask
 
     
     #define size of the kernel used ofr dailation
@@ -1556,19 +1603,22 @@ def extract_traits(image_file):
         'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
     
     
-    # define right bottom area for coin detection
-    x = int(img_width*0.5)
-    y = int(img_height*0.5)
-    w = int(img_width*0.5)
-    h = int(img_height*0.5)
+    if coin_location == 1:
+        
+        # define right bottom area for coin detection
+        x = int(img_width*0.5)
+        y = int(img_height*0.5)
+        w = int(img_width*0.5)
+        h = int(img_height*0.5)
+
+    else:
+        
+        # define left bottom area for coin detection
+        x = int(0)
+        y = int(img_height*0.5)
+        w = int(img_width*0.5)
+        h = int(img_height*0.5)
     
-    '''
-    # define right up area for coin detection
-    x = int(img_width*0.5)
-    y = int(0)
-    w = int(img_width*0.5)
-    h = int(img_height*0.5)
-    '''
     roi_image = region_extracted(orig, x, y, w, h)
     
     # apply gamma correction for image region with coin
@@ -1615,15 +1665,26 @@ def extract_traits(image_file):
     # define left bottom area for barcode detection
     
     if barcode_image_option == 1:
-        x = 0
-        y = int(img_height*0.5)
-        w = int(img_width*0.5)
-        h = int(img_height*0.5)
+        
+        # define left bottom area for barcode detection
+        if coin_location == 1:
+
+            x = 0
+            y = int(img_height*0.5)
+            w = int(img_width*0.5)
+            h = int(img_height*0.5)
+        
+        # define right bottom area for barcode detection
+        else:
+            
+            x = int(img_width*0.5)
+            y = int(img_height*0.5)
+            w = int(img_width*0.5)
+            h = int(img_height*0.5)
         
         roi_image = region_extracted(orig, x, y, w, h)
         
-        
-        
+
         # apply gamma correction for image region with coin
         gamma = 1.5
         gamma = gamma if gamma > 0 else 0.1
@@ -1664,6 +1725,7 @@ if __name__ == '__main__':
     ap.add_argument("-ft", "--filetype", required = True,    help = "Image filetype")
     ap.add_argument('-mk', '--marker', required = False,  default ='/marker_template/coin.png',  help = "Coin marker file name")
     ap.add_argument('-bc', '--barcode', required = False,  default ='/marker_template/barcode.png',  help = "Barcode file name")
+    ap.add_argument('-ml', '--marker_location', required = False,  default = 'right',  help = "Coin marker location")
     ap.add_argument("-r", "--result", required = False,    help="result path")
     ap.add_argument('-s', '--color-space', type = str, required = False, default ='lab', help='Color space to use: BGR, HSV, Lab (default), YCrCb (YCC)')
     ap.add_argument('-c', '--channels', type = str, required = False, default='2', help='Channel indices to use for clustering, where 0 is the first channel,' 
@@ -1684,6 +1746,11 @@ if __name__ == '__main__':
     
     coin_path = args["marker"]
     barcode_path = args["barcode"]
+    
+    if args["marker_location"] == 'right':
+        coin_location = 1
+    else:
+        coin_location = 0
     
     min_size = args['min_size']
     coin_size = args['coin_size']

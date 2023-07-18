@@ -15,7 +15,16 @@ Robust and parameter-free plant image segmentation and trait extraction.
 
 Sample ear test results in Excel format,unit (cm). 
 
-![Sample result of Ear test, unit(cm)](../main/media/image_03.png) 
+![Sample result of Ear test, unit(cm)](../main/media/image_03.png)
+
+
+## Imaging requirement:
+1. Tassel branches are opened and spread out evenly. 
+2. Background was in black color and diffusion reflection material, not reflective.
+3. Coin and barcode should be placed under the bottom line of the tassel. 
+4. Coin and barcode template images should be cropped and stored in the folder "marker_template" as "barcode.png" and "coin.png" to aid the detection. These template images should be the same for one experiment.
+5. Suggested Coin was silver Brazil 1 Real coin, golden ones are not suggested. 
+6. Suggested to use a QR code in the future instead of a 2D barcode. 
 
 ## Requirements
 
