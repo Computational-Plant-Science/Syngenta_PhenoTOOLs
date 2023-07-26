@@ -188,13 +188,15 @@ def mutilple_objects_detection(orig):
 
     """   
     # remove the back ground using Rembg is a tool to remove images background.
-    orig_foreground = remove(orig.copy())
+    orig_mask = remove(orig.copy(), only_mask=True)
+    
+    orig_forground = remove(orig.copy())
     
     # get the dimension of the image
-    height, width, channels = orig_foreground.shape
+    #height, width, channels = orig_foreground.shape
     
     
-    return orig_foreground
+    return orig_mask, orig_forground
     
 
 
@@ -220,6 +222,8 @@ def mutilple_objects_seg(orig, channel):
     """   
     # apply smooth filtering of the image at the color level.
     shifted = cv2.pyrMeanShiftFiltering(orig, 21, 70)
+    
+    #shifted = cv2.pyrMeanShiftFiltering(orig, 21, 10)
 
     # get the dimension of the image
     height, width, channels = orig.shape
@@ -271,8 +275,11 @@ def mutilple_objects_seg(orig, channel):
         
         thresh = cv2.threshold(L, 128, 255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
-    # Taking a matrix of size 25 as the kernel
-    kernel = np.ones((25,25), np.uint8)
+    # Taking a matrix of size_ker as the kernel
+    
+    size_ker = 10
+    
+    kernel = np.ones((size_ker, size_ker), np.uint8)
     
     # apply morphological operations to remove noise
     thresh_dilation = cv2.dilate(thresh, kernel, iterations=1)
@@ -287,25 +294,28 @@ def mutilple_objects_seg(orig, channel):
     cnts = imutils.grab_contours(cnts)
     
     # sort the contour based on area size from largest to smallest, and get the first two max contours
-    cnts_sorted = sorted(cnts, key = cv2.contourArea, reverse = True)[0:2]
+    cnts_sorted = sorted(cnts, key = cv2.contourArea, reverse = True)[0:n_ear]
 
     # sort the contours from left to right
     cnts_sorted = sort_contours(cnts_sorted, method = "left-to-right")
     
     #print("cv2.contourArea(cnts_sorted[0]), cv2.contourArea(cnts_sorted[1])")
     #print(cv2.contourArea(cnts_sorted[0]), cv2.contourArea(cnts_sorted[1]))
+    
+    #print("left-to-right")
     #print(len(cnts_sorted))
     
-    # if two contours are connectedm remove the significantly smaller one in size
+    '''
+    # if two contours are connected remove the significantly smaller one in size
     if cv2.contourArea(cnts_sorted[0]) > 10*cv2.contourArea(cnts_sorted[1]):
         
         cnts_sorted = cnts_sorted[:1]
-    
+    '''
 
     # initialize variables to record the centera, area of contours
     center_locX = []
     center_locY = []
-    cnt_area = [0] * 2
+    cnt_area = [0] * n_ear
     
     # initialize empty mask image
     img_thresh = np.zeros(orig.shape, np.uint8)
@@ -329,10 +339,10 @@ def mutilple_objects_seg(orig, channel):
         cnt_area[idx] = cv2.contourArea(c)
         
         # draw the contour and center of the shape on the image
-        img_overlay = cv2.drawContours(img_overlay_bk, [c], -1, (0, 255, 0), 2)
-        mask_seg = cv2.drawContours(img_thresh, [c], -1, (255,255,255),-1)
+        #img_overlay = cv2.drawContours(img_overlay_bk, [c], -1, (0, 255, 0), 2)
+        mask_seg = cv2.drawContours(img_thresh, [c], -1, (255,255,255), -1)
         #center_result = cv2.circle(img_thresh, (cX, cY), 14, (0, 0, 255), -1)
-        img_overlay = cv2.putText(img_overlay_bk, "{}".format(idx +1), (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 5.5, (255, 0, 0), 5)
+        #img_overlay = cv2.putText(img_overlay_bk, "{}".format(idx +1), (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 5.5, (255, 0, 0), 5)
         
     
     # get the middle point coordinate of the two centers of the contours
@@ -348,8 +358,12 @@ def mutilple_objects_seg(orig, channel):
     mask_seg_gray = cv2.cvtColor(mask_seg, cv2.COLOR_BGR2GRAY)
     
     
-    return left_img, right_img, mask_seg_gray, img_overlay, cnt_area
-
+    #return left_img, right_img, mask_seg_gray, img_overlay, cnt_area
+    
+    return mask_seg_gray
+    
+    
+    
 
 # color clustering based object segmentation
 def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
@@ -712,7 +726,6 @@ def adaptive_threshold_external(img):
 
 
 
-
 def comp_external_contour(orig, thresh, img_overlay):
 
     """compute the parameters of the external contour of the plant object 
@@ -744,7 +757,7 @@ def comp_external_contour(orig, thresh, img_overlay):
 
     area = 0
     kernel_area_ratio = 0
-    w=h=0
+    w = h = 0
     
 
     ####################################################################################
@@ -777,7 +790,7 @@ def comp_external_contour(orig, thresh, img_overlay):
     for index, c in enumerate(contours_sorted):
         
         # visualize only the two external contours and its bounding box
-        if index < 2:
+        if index < n_ear:
             
             #get the bounding rect
             (x, y, w, h) = cv2.boundingRect(c)
@@ -1321,50 +1334,49 @@ def circle_detection(image):
     # detect circles in the image
     #circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, 1.2, minDist, param1=param1, param2=param2, minRadius=minRadius, maxRadius=maxRadius)
     
-    # detect circles in the image
-    circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp, minDist)
     
     # initialize diameter of detected circle
     diameter_circle = 0
-    
-    
+
     circle_center_coord = []
     circle_center_radius = []
     idx_closest = 0
     
-    
-    # convert the (x, y) coordinates and radius of the circles to integers
-    circles = np.round(circles[0, :]).astype("int")
-    
-    # loop over the (x, y) coordinates and radius of the circles
-    for (x, y, r) in circles:
-        
-        coord = (x, y)
-        
-        circle_center_coord.append(coord)
-        circle_center_radius.append(r)
-    
-    
+    # detect circles in the image
+    circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp, minDist)
+
     # choose the left bottom circle if more than one circles are detected 
-    if len(circles) > 1:
+    if circles is not None and len(circles) > 0:
         
-        #finding closest point among the center list of the circles to the right-bottom of the image
-        idx_closest = closest_center((0 + img_width, 0 + img_height), circle_center_coord)
-    
-    else:
+        if len(circles) > 1:
+
+            # convert the (x, y) coordinates and radius of the circles to integers
+            circles = np.round(circles[0, :]).astype("int")
         
-        # ensure at least some circles were found
-        if circles is not None and len(circles) > 0:
+            # loop over the (x, y) coordinates and radius of the circles
+            for (x, y, r) in circles:
+                
+                coord = (x, y)
+                
+                circle_center_coord.append(coord)
+                circle_center_radius.append(r)
+            
+            #finding closest point among the center list of the circles to the right-bottom of the image
+            idx_closest = closest_center((0 + img_width, 0 + img_height), circle_center_coord)
+            
+            # draw the circle in the output image, then draw a center
+            circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], circle_center_radius[idx_closest], (0, 255, 0), 4)
+            circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], 5, (0, 128, 255), -1)
+
+            # compute the diameter of coin
+            diameter_circle = circle_center_radius[idx_closest]*2
+        
+        else:
+        
+            # ensure at least some circles were found
             idx_closest = 0
     
-    print("idx_closest = {}\n".format(idx_closest))
-    
-    # draw the circle in the output image, then draw a center
-    circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], circle_center_radius[idx_closest], (0, 255, 0), 4)
-    circle_detection_img = cv2.circle(output, circle_center_coord[idx_closest], 5, (0, 128, 255), -1)
-
-    # compute the diameter of coin
-    diameter_circle = circle_center_radius[idx_closest]*2
+    #print("idx_closest = {}\n".format(idx_closest))
     
     
     return circles, circle_detection_img, diameter_circle
@@ -1497,7 +1509,7 @@ def watershed_seg(orig, min_distance_value):
     from skimage.color import label2rgb
     labeled_img = label2rgb(labeled_coins, image=coins)
     '''
-    print("[INFO] {} unique segments found\n".format(len(np.unique(labels)) - 1))
+    print("[INFO] {} unique labels found\n".format(len(np.unique(labels)) - 1))
    
     #Map component labels to hue val
     label_hue = np.uint8(128*labels/np.max(labels))
@@ -1515,8 +1527,8 @@ def watershed_seg(orig, min_distance_value):
 
     # save results
     #cv2.imwrite(result_img_path,labeled_img)
-
-
+    area_rec = []
+    kernel_size = 0
     count_kernel = 0
     # loop over the unique labels returned by the Watershed algorithm
     for label in np.unique(labels):
@@ -1543,17 +1555,17 @@ def watershed_seg(orig, min_distance_value):
             label_overlay = cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
             #cv2.putText(image, "#{}".format(label), (int(x) - 10, int(y)),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             count_kernel+= 1
+            area_rec.append(cv2.contourArea(c))
+            
 
-    print("[INFO] {} unique segments found \n".format(count_kernel))
-
-    #define result path for simplified segmentation result
-    #result_img_path = save_path_ac + str(filename[0:-4]) + '_ac.jpg'
-
-    #write out results
-    #cv2.imwrite(result_img_path,cp_img)
     
+
+   
+    kernel_size = sum(area_rec)/len(area_rec)
     
-    return labels, label_overlay, labeled_img, count_kernel
+    print("[INFO] segments number = {}, size = {}\n".format(count_kernel, kernel_size))
+    
+    return labels, label_overlay, labeled_img, count_kernel, kernel_size
 
 
 
@@ -1811,7 +1823,7 @@ def valid_kernel_mask(orig_mask, cnt_width, cnt_height, cnt_x, cnt_y, valid_kern
     #x_r = int(avg_x + img_width)
     #y_t = int(avg_y + max_height*valid_kernel_ratio_top)
     #y_b = int(avg_y + max_height*(1-valid_kernel_ratio_bottom))
-    
+    '''
     # compute the coordinates to get the masking area for two ears in one image
     for i in range(len(cnt_height)):
     
@@ -1823,101 +1835,88 @@ def valid_kernel_mask(orig_mask, cnt_width, cnt_height, cnt_x, cnt_y, valid_kern
     
         # assign area of valid kernel 
         v_mask[y_t : y_b, x_l : x_r] = 255
+    '''
+    
+    # compute the coordinates to get the masking area
+    x_l = int(cnt_x + (cnt_width-10)*valid_kernel_ratio_left)
+    x_r = int(cnt_x + (cnt_width-10)*(1 - valid_kernel_ratio_right))
+    y_t = int(cnt_y + (cnt_height-10)*valid_kernel_ratio_top)
+    y_b = int(cnt_y + (cnt_height-10)*(1-valid_kernel_ratio_bottom))
+
+    # assign area of valid kernel 
+    v_mask[y_t : y_b, x_l : x_r] = 255
     
     return v_mask
     
 
 
-def detect_blur_fft(image, size=60, thresh=10):
+
+
+def get_contours(image_thresh):
     
-    """Fast Fourier Transform (FFT) of image
+    """find contours in binary image mask and sort them in left-to-right order
     
     Inputs: 
     
-        image: image data after loading
-        
-        size: window size of FFT
-        
-        thresh: threshhold value for blurry
+        image_thresh: image mask
 
     Returns:
     
-        blurry_mean:  value showing the blurriness in image
-        
-        blurry_mean <= thresh: whether the input image was blurry or not
+        cnts_sorted:  sorted contours
         
     """
+    # find contours in the thresholded image
+    cnts = cv2.findContours(image_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cnts = imutils.grab_contours(cnts)
+
+    # sort the contour based on area size from largest to smallest, and get the first two max contours
+    cnts_sorted = sorted(cnts, key = cv2.contourArea, reverse = True)[0:n_ear]
+
+    # sort the contours from left to right
+    cnts_sorted = sort_contours(cnts_sorted, method = "left-to-right")
+
+    print("left-to-right")
+    print(len(cnts_sorted))
     
-    # grab the dimensions of the image and use the dimensions to
-    # derive the center (x, y)-coordinates
-    (h, w) = image.shape
-    (cX, cY) = (int(w / 2.0), int(h / 2.0))
-
-    # compute the FFT to find the frequency transform, then shift
-    # the zero frequency component (i.e., DC component located at
-    # the top-left corner) to the center where it will be more
-    # easy to analyze
-    fft = np.fft.fft2(image)
-    fftShift = np.fft.fftshift(fft)
-
-    # zero-out the center of the FFT shift (i.e., remove low
-    # frequencies), apply the inverse shift such that the DC
-    # component once again becomes the top-left, and then apply
-    # the inverse FFT
-    fftShift[cY - size:cY + size, cX - size:cX + size] = 0
-    fftShift = np.fft.ifftshift(fftShift)
-    recon = np.fft.ifft2(fftShift)
-
-    # compute the magnitude spectrum of the reconstructed image,
-    # then compute the mean of the magnitude values
-    magnitude = 20 * np.log(np.abs(recon))
-    blurry_mean = np.mean(magnitude)
-
-    # the image will be considered "blurry" if the mean value of the
-    # magnitudes is less than the threshold value
-    return (blurry_mean, blurry_mean <= thresh)
+    return cnts_sorted
 
 
 
-def detect_blur(image_input):
+
+
+def mask_from_contour(orig, c):
     
-    """apply Fast Fourier Transform (FFT) to perform blur detection in image
+    """compute binary mask image  from contours
     
     Inputs: 
     
-        orig: image data after loading
+        img_thresh: image mask
+        
+        
 
     Returns:
     
-        blurry_mean:  value showing the blurriness in image
+        cnts_sorted:  sorted contours
         
     """
     
-    #path, filename = os.path.split(image_path)
-    #orig = cv2.imread(image_path)
-    
-    if image_input is None:
-        print("Could not read image, skipping")
-        return
-    
-    # resize image for fast FFT
-    resized = imutils.resize(image_input, width=500)
-    
-    # convert resized image to gray format
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    
-    # compute image blurry value
-    (blurry_mean, blurry) = detect_blur_fft(gray, size=60, thresh=20)
-
-    if blurry:
-        print("Image is too blurry, omitting")
-    else:
-        print("Image is clear enough")
-    
-    # return blurry value
-    return blurry_mean
-    
+    # initialize empty mask image
+    img_thresh = np.zeros(orig.shape, np.uint8)
         
+    mask_individual_BRG = cv2.drawContours(img_thresh, [c], -1, (255, 255, 255), -1)
+
+    #v_mask = valid_kernel_mask(mask_internal.copy(), w, h, x, y, valid_kernel_ratio_list)
+
+    mask_individual_gray = cv2.cvtColor(mask_individual_BRG, cv2.COLOR_BGR2GRAY)
+
+    mask_individual = cv2.threshold(mask_individual_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+
+    return mask_individual
+
+
+
+
 
 
 def extract_traits(image_file):
@@ -1974,8 +1973,7 @@ def extract_traits(image_file):
 
     
 
-    # initialize all the traits output 
-    area = kernel_area_ratio = max_width = max_height = avg_curv = n_leaves = 0
+
     
     if (file_size > 5.0):
         print("File size: {0} MB\n".format(str(int(file_size))))
@@ -2004,284 +2002,223 @@ def extract_traits(image_file):
     
     #source_image = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
     
+    ##########################################################################################################
+    # segment mutiple objects in image uto accquire external contours
+    (mask_external, img_foreground) = mutilple_objects_detection(orig)
+    
+    
+    '''
+    
+    #clean small holes and hair
+
+    '''
+    
+
+    mask_external = cv2.threshold(mask_external, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    
+        
+    # apply individual object mask
+    img_foreground = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_external)
+    
+    
+    # save result
+    result_file = (save_path + base_name + '_mask_external' + file_extension)
+    cv2.imwrite(result_file, mask_external)
+
+    # save result
+    result_file = (save_path + base_name + '_foreground' + file_extension)
+    cv2.imwrite(result_file, img_foreground)
+    
+    
+    
+    
     ###########################################################################################################
     # segment mutiple objects in image using thresh method to accquire internal contours
-    (left_img, right_img, mask_seg, img_overlay, cnt_area_internal) = mutilple_objects_seg(orig, channel = 'B')
+    #(left_img, right_img, mask_seg, img_overlay, cnt_area_internal) = mutilple_objects_seg(orig, channel = 'B')
     
-    # save result
-    #result_file = (save_path + base_name + '_mask_seg' + file_extension)
-    #cv2.imwrite(result_file, mask_seg)
+    (mask_internal) = mutilple_objects_seg(orig, channel = 'B')
+    
+    #mask_internal = mask_seg
     
     # apply individual object mask
-    masked_image = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_seg)
+    #masked_image = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_seg)
+    
+    masked_image = img_foreground
     
     # save result
-    result_file = (save_path + base_name + '_masked' + file_extension)
-    cv2.imwrite(result_file, masked_image)
-    ##########################################################################################################3
-    # segment mutiple objects in image using adaptive threshold method to accquire external contours
-    (mask_external, trait_img) = adaptive_threshold_external(orig)
+    result_file = (save_path + base_name + '_mask_internal' + file_extension)
+    cv2.imwrite(result_file, mask_internal)
     
-    # save result
-    #result_file = (save_path + base_name + '_mask_external' + file_extension)
-    #cv2.imwrite(result_file, mask_external)
-    
-    
-    n_kernels_valid = 0
-    
-    kernel_size = 0
-    
-    n_kernels_all = 0
-    
-    ####################################################################################
-    '''
-    # Convert mean shift image from BRG color space to LAB space and extract B channel
-    L, A, B = cv2.split(cv2.cvtColor(masked_image, cv2.COLOR_BGR2LAB))
-    
-    # save Lab result
-    result_file = (save_path + base_name + '_L' + file_extension)
-    cv2.imwrite(result_file, L)
-    
-    # save Lab result
-    result_file = (save_path + base_name + '_A' + file_extension)
-    cv2.imwrite(result_file, A)
-    
-    # save Lab result
-    result_file = (save_path + base_name + '_B' + file_extension)
-    cv2.imwrite(result_file, B)
-    '''
-    
-    # parse input arguments
-    args_colorspace = args['color_space']
-    args_channels = args['channels']
-    args_num_clusters = args['num_clusters']
-    
-    #color clustering based object segmentation to accquire another external contours
-    thresh = color_cluster_seg(image.copy(), args_colorspace, args_channels, args_num_clusters)
-    
-    # segment mutiple objects in image using thresh method to accquire internal contours
-    (left_img, right_img, thresh, img_overlay, cnt_area_internal) = mutilple_objects_seg(orig, channel = 'L')
-    
-    # save result
-    #result_file = (save_path + base_name + '_thresh' + file_extension)
-    #cv2.imwrite(result_file, thresh)
-    
+
+
    ###############################################################################################
     #combine external contours and internal contours to compute object mask
-    combined_mask = mask_seg | thresh | mask_external
+    #combined_mask = mask_seg | thresh | mask_external
     
-    '''
-    # Taking a matrix of size 25 as the kernel
-    dilate_kernel = np.ones((25,25), np.uint8)
-    combined_mask = cv2.dilate(combined_mask, dilate_kernel, iterations=1)
-    '''
-    #result_file = (save_path + base_name + '_combined_mask' + file_extension)
-    #cv2.imwrite(result_file, combined_mask)
-    
-    # combine external contours and internal contours 
-    thresh_combined_mask = cv2.threshold(combined_mask, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    
-    # find contours in the thresholded image
-    cnts = cv2.findContours(thresh_combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
-
-    #sort the contours based on area size
-    cnts_sorted = sorted(cnts, key = cv2.contourArea, reverse = True)
-    
-    for c in cnts_sorted[0:2]:
-
-        # draw the contour and center of the shape on the image
-        img_overlay = cv2.drawContours(img_overlay, [c], -1, (0, 255, 0), 2)
-    
-    # save result
-    #result_file = (save_path + base_name + '_overlay_combined' + file_extension)
-    #cv2.imwrite(result_file, img_overlay)
-    
-    ################################################################################################################################
-    #compute external traits based on thresh_combined_mask
-    (trait_img, cnt_area_external, cnt_width, cnt_height, cnt_x, cnt_y) = comp_external_contour(orig, thresh_combined_mask, img_overlay)
-    
-    # save result
-    result_file = (save_path + base_name + '_excontour' + file_extension)
-
-    cv2.imwrite(result_file, trait_img)
-    
-    #################################################################################################################################
-    #compute the area ratio of interal contour verse external contour, kernal area ratio
-    area_max_external = max(cnt_area_external)
-    
-    sum_area_internal = sum(cnt_area_internal)
-    
-    # if internal contour and external contour was connectd, meaning the two plant objects are touching each other and overlapped
-    if (cnt_area_internal[0] > cnt_area_external[0])  or  (cnt_area_internal[1] > cnt_area_external[1]):
-        
-        if sum_area_internal < area_max_external:
-            
-            cnt_area_external[0] = cnt_area_external[1] = np.mean(cnt_area_external)
-        else:
-            cnt_area_external[0] = cnt_area_external[1] = area_max_external
-
-
-   
-    # compute the area ratio 
-    if cnt_area_external[0] > 0 and cnt_area_external[1] > 0:
-
-        area_ratio = (cnt_area_internal[0]/cnt_area_external[0], cnt_area_internal[1]/cnt_area_external[1])
-    
-    elif cnt_area_external[0] > 0:
-        
-        area_ratio = (cnt_area_internal[0]/cnt_area_external[0], cnt_area_internal[1]/cnt_area_external[0])
-    
-    elif cnt_area_external[1] > 0:
-        
-        area_ratio = (cnt_area_internal[0]/cnt_area_external[1], cnt_area_internal[1]/cnt_area_external[1])
-        
-    else:
-        
-        area_ratio = 0
-        
-        
-    #print(area_ratio)
-    
-    area_ratio  = [ elem for elem in area_ratio if elem < 1 and elem > 0]
+    #combined_mask = mask_internal | mask_external
 
     
-    # compute external traits 
-    kernel_area_ratio = np.mean(area_ratio)
-    kernel_area = sum(cnt_area_internal) / len(cnt_area_internal)
+    #thresh_combined_mask = cv2.threshold(mask_external, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
-    max_width = sum(cnt_width) / len(cnt_width)
-    max_height = sum(cnt_height) / len(cnt_height)
+    # initialize all the traits output 
+    area = kernel_area_ratio = max_width = max_height = avg_curv = 0
     
-    avg_x = sum(cnt_x) / len(cnt_x)
+    n_kernels_valid = kernel_size = n_kernels_all = kernel_area = 0
     
     
-    #################################################################################
+    ################################
+    # compute triats for every kernel in current image
+    ear_area_rec = []
+    ear_area_ratio_rec = []
     
-    v_mask = valid_kernel_mask(mask_seg.copy(), cnt_width, cnt_height, cnt_x, cnt_y, valid_kernel_ratio_list)
+    ear_width_rec = []
+    ear_height_rec = []
     
-    # apply individual object mask
-    masked_valid_kernel = cv2.bitwise_and(masked_image.copy(), masked_image.copy(), mask = v_mask)
+    n_kernels_all_rec = []
+    n_kernels_valid_rec = []
     
-    # save result
-    #result_file = (save_path + base_name + '_masked_valid_kernel' + file_extension)
-    #cv2.imwrite(result_file, masked_valid_kernel)
+    kernel_size_rec = []
+    kernel_valid_size_rec = []
     
-    # apply individual object mask
-    masked_all_kernel = cv2.bitwise_and(masked_image.copy(), masked_image.copy(), mask = combined_mask)
-    
-    # save result
-    #result_file = (save_path + base_name + '_masked_all_kernel' + file_extension)
-    #cv2.imwrite(result_file, masked_all_kernel)
-    
-    mask_valid_all = []
-    mask_valid_all.append(masked_valid_kernel)
-    mask_valid_all.append(masked_all_kernel)
+    ear_index_rec = []
     
     
-    key_word = str('mask_sel')
+    # get contours from both exteanl and internal masks
+    cnts_external = get_contours(mask_external)
+    cnts_internal = get_contours(mask_internal)
+
     
-    avg_n_kernels = []
+    # set the parameters for wateshed segmentation method
+    min_distance_value = args['min_dist']
     
-    avg_kernel_size = []
-    
+    # initialize background image to draw the contours
+    img_overlay_bk = orig.copy()
     
     # loop over the selected contours
-    for idx, mask_value in enumerate(mask_valid_all):
+    for idx, (c_external, c_internal) in enumerate(zip(cnts_external, cnts_internal)):
         
-        if idx == 0:
-            key_word = '_valid'
-        else:
-            key_word = '_all'
-            
-        ###################################################################################
-        # set the parameters for adoptive threshholding method
-        GaussianBlur_ksize = 5
         
-        blockSize = 41
+        ear_index_rec.append(idx+1)
+        ##########################################################################################
+        #get the bounding rect
+        (x, y, w, h) = cv2.boundingRect(c_external)
         
-        weighted_mean = 10
+        area_c = max(cv2.contourArea(c_external), cv2.contourArea(c_internal))
         
-        # adoptive threshholding method to the masked image from mutilple_objects_seg
-        (thresh_adaptive_threshold, maksed_img_adaptive_threshold) = adaptive_threshold(mask_value, GaussianBlur_ksize, blockSize, weighted_mean)
+        area_ratio = min(cv2.contourArea(c_external), cv2.contourArea(c_internal))/area_c
         
-        # save result
-        #result_file = (save_path + base_name + '_thresh_adaptive_threshold' + file_extension)
-        #cv2.imwrite(result_file, thresh_adaptive_threshold)
+        ear_area_rec.append(area_c)
+        ear_width_rec.append(w)
+        ear_height_rec.append(h)
         
-        # save result
-        #result_file = (save_path + base_name + '_maksed_img_adaptive_threshold' + file_extension)
-        #cv2.imwrite(result_file, maksed_img_adaptive_threshold)
+        ear_area_ratio_rec.append(area_ratio)
+        
+        print("Contour shape info: width = {1:.2f}, height = {2:.2f}, area = {3:.2f} area_ratio = {3:.2f}\n".format(w, h, area_c, area_ratio))
+        ############################################################################################
 
+        mask_individual = mask_from_contour(orig.copy(), c_internal)
         
-        ###################################################################################
-        # set the parameters for wateshed segmentation method
-        min_distance_value = args['min_dist']
-        
-        
-        (labels, label_overlay, labeled_img, count_kernel) = watershed_seg(maksed_img_adaptive_threshold, min_distance_value)
+        # apply individual object mask
+        masked_kernel = cv2.bitwise_and(img_foreground.copy(), img_foreground.copy(), mask = mask_individual)
         
         # save result
-        result_file = (save_path + base_name + '_label_overlay' + key_word + file_extension)
+        #result_file = (save_path + base_name + str("_{}".format(idx)) +  '_masked_kernel' + file_extension)
+        #cv2.imwrite(result_file, masked_kernel)
+        
+        
+        (labels_kernel, label_overlay, labeled_img, count_kernel, kernel_size) = watershed_seg(masked_kernel, min_distance_value)
+        
+        n_kernels_all_rec.append(count_kernel)
+        kernel_size_rec.append(kernel_size)
+        
+        
+        
+        # save result
+        result_file = (save_path + base_name + str("_{}".format(idx)) + '_label_overlay' + file_extension)
         cv2.imwrite(result_file, label_overlay)
         
+
+        
+        ###############################################################################################
+        v_mask = valid_kernel_mask(mask_individual.copy(), w, h, x, y, valid_kernel_ratio_list)
+        
+        # apply individual object mask
+        masked_kernel_valid = cv2.bitwise_and(img_foreground.copy(), img_foreground.copy(), mask = v_mask)
+        
         # save result
-        #result_file = (save_path + base_name + '_labeled_img' + file_extension)
-        #cv2.imwrite(result_file, labeled_img)
+        #result_file = (save_path + base_name + str("_{}".format(idx)) +  '_masked_valid_kernel' + file_extension)
+        #cv2.imwrite(result_file, masked_kernel)
+        
+
+        (labels_kernel_valid, label_overlay_valid, labeled_img_valid, count_kernel_valid, kernel_size_valid) = watershed_seg(masked_kernel_valid, min_distance_value)
+
+        # save result
+        result_file = (save_path + base_name + str("_{}".format(idx)) + '_label_overlay_valid' + file_extension)
+        cv2.imwrite(result_file, label_overlay_valid)
+        
         
 
 
-        ###################################################################################
-        # compute the kernel traits
-        (label_trait, kernel_index_rec, contours_rec, area_rec, major_axis_rec, minor_axis_rec) = kernel_traits_computation(masked_valid_kernel, labels)
-        
-        # save result
-        #result_file = (save_path + base_name + '_kernel_overlay' + file_extension)
-        #cv2.imwrite(result_file, label_trait)
-        
-        n_kernels = int(count_kernel*0.5)
-        
-        kernel_size = sum(area_rec)/len(area_rec)
-        
-        avg_n_kernels.append(n_kernels)
-        avg_kernel_size.append(kernel_size)
+        n_kernels_valid_rec.append(count_kernel_valid)
+        kernel_valid_size_rec.append(kernel_size_valid)
         
         
-        #####################################
-        # kernel area distributation
-        # panda data format
-        s = pd.Series(area_rec)
+        ############################################################################################
+        # visualize results
         
-        # output info
-        print("[INFO] Statistical analysis of Kernel traits: (unit:pixels)\n")
-        print(s.describe())
-        print()
+        # compute the center of the contour
+        M = cv2.moments(c_external)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
         
-        #counts, bins, _ = plt.hist(area_rec, bins=len(area_rec))
+        # draw the center of the shape on the image
+        trait_img = cv2.circle(img_overlay_bk, (cX, cY), 7, (255, 255, 255), -1)
+        #trait_img = cv2.putText(img_overlay_bk, "center", (cX - 20, cY - 20),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            
+        
+        # compute the four coordinates to get the center of bounding box
+        tl = (x, y+h*0.5)
+        tr = (x+w, y+h*0.5)
+        br = (x+w*0.5, y)
+        bl = (x+w*0.5, y+h)
+        
+        # compute the midpoint between bottom-left and bottom-right coordinates
+        (tltrX, tltrY) = midpoint(tl, tr)
+        (blbrX, blbrY) = midpoint(bl, br)
+        
+        # draw the midpoints on the image
+        trait_img = cv2.circle(img_overlay_bk, (int(tltrX), int(tltrY)), 15, (255, 0, 0), -1)
+        trait_img = cv2.circle(img_overlay_bk, (int(blbrX), int(blbrY)), 15, (255, 0, 0), -1)
 
-        # save result
-        #result_file = (save_path + base_name + '_kernel_hist' + file_extension)
-        #plt.savefig(result_file)
+        # draw lines between the midpoints
+        trait_img = cv2.line(img_overlay_bk, (int(x), int(y+h*0.5)), (int(x+w), int(y+h*0.5)), (255, 0, 255), 6)
+        trait_img = cv2.line(img_overlay_bk, (int(x+w*0.5), int(y)), (int(x+w*0.5), int(y+h)), (255, 0, 255), 6)
         
-        # draw distributation histogram
-        _, bins = pd.cut(area_rec, bins=200, retbins=True)
-        plt.hist(area_rec, bins)
+        # compute the convex hull of the contour
+        hull = cv2.convexHull(c_external)
         
-        # Add title and axis names
-        plt.title('Individual maize kernel size distributation')
-        plt.ylabel('Maize kernel number')
-        plt.xlabel('Individual maize kernel size (unit:pixel)')
+        # draw convexhull in red color
+        trait_img = cv2.drawContours(img_overlay_bk, [hull], -1, (0, 0, 255), 2)
         
-        result_file = (save_path + base_name + '_kernel_hist' + key_word + file_extension)
-        plt.savefig(result_file)
         
+        # draw a green rectangle to visualize the bounding rect
+        trait_img = cv2.rectangle(img_overlay_bk, (x, y), (x+w, y+h), (255, 255, 0), 4)
+            
+        # draw the contour and center of the shape on the image
+        trait_img = cv2.drawContours(img_overlay_bk, [c_external], -1, (0, 255, 0), 2)
+        
+        # draw the contour and center of the shape on the image
+        trait_img = cv2.drawContours(img_overlay_bk, [c_internal], -1, (0, 0, 255), 2)
+
+        #center_result = cv2.circle(img_thresh, (cX, cY), 14, (0, 0, 255), -1)
+        trait_img = cv2.putText(img_overlay_bk, "{}".format(idx +1), (cX - 20, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 2.5, (255, 0, 0), 5)
     
-    n_kernels_valid = avg_n_kernels[0]
     
-    n_kernels_all = avg_n_kernels[1]
+    # save result
+    result_file = (save_path + base_name + '_overlay' + file_extension)
+    cv2.imwrite(result_file, trait_img)
     
-    # kernel size was defined as average of kernel size inside valid area/region of interest defined by user
-    kernel_size = avg_kernel_size[0]
+    
     
     ###################################################################################################
     # detect coin and barcode uisng template mathcing method
@@ -2321,8 +2258,11 @@ def extract_traits(image_file):
     
     (circles, circle_detection_img, diameter_circle) = circle_detection(enhanced_region) 
     
-    pixel_cm_ratio = diameter_circle/coin_size
-    
+    if diameter_circle> 0 :
+        pixel_cm_ratio = diameter_circle/coin_size
+    else:
+        pixel_cm_ratio = 1
+        
     # save result
     result_file = (save_path + base_name + '_coin_circle' + file_extension)
     cv2.imwrite(result_file, circle_detection_img)
@@ -2359,9 +2299,11 @@ def extract_traits(image_file):
     tag_info = barcode_detect(marker_barcode_img)
 
     
-    return image_file_name, tag_info, kernel_size, n_kernels_valid, n_kernels_all, kernel_area, kernel_area_ratio, max_width, max_height, diameter_circle, coin_size, pixel_cm_ratio, img_brightness, blurry_value
+    #return image_file_name, tag_info, kernel_size, n_kernels_valid, n_kernels_all, kernel_area, kernel_area_ratio, max_width, max_height, diameter_circle, coin_size, pixel_cm_ratio, img_brightness, blurry_value
     
-
+    return image_file_name, tag_info, ear_index_rec, ear_area_rec, ear_area_ratio_rec, ear_width_rec, ear_height_rec,\
+            n_kernels_all_rec, kernel_size_rec, n_kernels_valid_rec, kernel_valid_size_rec, \
+            diameter_circle, coin_size, pixel_cm_ratio
 
 
 
@@ -2381,7 +2323,7 @@ if __name__ == '__main__':
     ap.add_argument('-n', '--num-clusters', type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-ne', '--num_ears', type = int, required = False, default = 2,  help = 'Number of ears in image (default 2).')
     ap.add_argument('-min', '--min_size', type = int, required = False, default = 250000,  help = 'min size of object to be segmented.')
-    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 38,  help = 'distance threshold for watershed segmentation.')
+    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 1,  help = 'distance threshold for watershed segmentation.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin diameter in cm')
     ap.add_argument('-vkrl', '--valid_kernel_ratio_left', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from left')
     ap.add_argument('-vkrr', '--valid_kernel_ratio_right', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from right')
@@ -2468,18 +2410,32 @@ if __name__ == '__main__':
     
     result_list_cm = []
 
-    '''
     ######################################################################################
     #loop execute to get all traits
     for image in imgList:
         
-        (filename, tag_info, kernel_area, kernel_area_ratio, max_width, max_height, color_ratio, hex_colors) = extract_traits(image)
-        result_list.append([filename, tag_info, kernel_area, kernel_area_ratio, max_width, max_height, color_ratio[0], color_ratio[1], color_ratio[2], color_ratio[3], hex_colors[0], hex_colors[1], hex_colors[2], hex_colors[3]])
-        
-        #(filename, tag_info, kernel_area, kernel_area_ratio, max_width, max_height) = extract_traits(image)
+        (image_file_name, tag_info, ear_index_rec, ear_area_rec, ear_area_ratio_rec, ear_width_rec, ear_height_rec, \
+            n_kernels_all_rec, kernel_size_rec, n_kernels_valid_rec, kernel_valid_size_rec, \
+            diameter_circle, coin_size, pixel_cm_ratio) = extract_traits(image)
 
-        #result_list.append([filename, tag_info, kernel_area, kernel_area_ratio, max_width, max_height])
+       
+        for i in range(len(ear_index_rec)):
+            
+            result_list.append([image_file_name, tag_info, ear_index_rec[i], ear_area_rec[i]/pow(pixel_cm_ratio,2), ear_area_ratio_rec[i]/pow(pixel_cm_ratio,2), ear_width_rec[i]/pixel_cm_ratio, ear_height_rec[i]/pixel_cm_ratio, \
+                                    n_kernels_all_rec[i], kernel_size_rec[i]/pow(pixel_cm_ratio,2), n_kernels_valid_rec[i], kernel_valid_size_rec[i]/pow(pixel_cm_ratio,2), \
+                                    diameter_circle/pixel_cm_ratio, coin_size, pixel_cm_ratio])
 
+
+    #############################################################################################
+    #print out result on screen output as table
+
+    print("Summary: {0} plant images were processed...\n".format(n_images))
+    
+    #output in command window in a sum table
+   
+    table = tabulate(result_list, headers = ['filename', 'tag_info', 'ear_index', 'ear_area', 'ear_area_ratio', 'ear_width', 'ear_height', 'number_kernels_all', 'kernel_size', 'number_kernels_valid', 'kernel_size_valid', 'coins_diameter', 'coin_size', 'pixel_cm_ratio'], tablefmt = 'orgtbl')
+    
+    print(table + "\n")
     
     '''
     ####################################################################################
@@ -2514,7 +2470,10 @@ if __name__ == '__main__':
     pixel_cm_ratio = list(zip(*result))[11]
     brightness = list(zip(*result))[12]
     blurry_value = list(zip(*result))[13]
+    
+    '''
 
+    '''
     # create result list
     for i, (v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13) in enumerate(zip(filename, tag_info, avg_kernel_size, avg_n_kernels_valid, avg_n_kernels_all, avg_kernel_area, avg_kernel_area_ratio, avg_width, avg_height, coins_width_avg, coin_size, pixel_cm_ratio, brightness, blurry_value)):
 
@@ -2523,20 +2482,9 @@ if __name__ == '__main__':
         result_list_cm.append([v0,v1,v2/pow(v11,2),v3,v4,v5/pow(v11,2),v6,v7/v11,v8/v11,v9/v11,v10,v11,v12,v13])
     
     
-    
-    ############################################################################################
-    #print out result on screen output as table
 
-    print("Summary: {0} plant images were processed...\n".format(n_images))
-    
-    #output in command window in a sum table
- 
-    #table = tabulate(result_list, headers = ['filename', 'mazie_ear_area', 'kernel_area_ratio', 'max_width', 'max_height' ,'cluster 1', 'cluster 2', 'cluster 3', 'cluster 4', 'cluster 1 hex value', 'cluster 2 hex value', 'cluster 3 hex value', 'cluster 4 hex value'], tablefmt = 'orgtbl')
-    
-    table = tabulate(result_list, headers = ['filename', 'tag_info', 'avg_kernel_size', 'avg_n_kernels_valid', 'avg_n_kernels_all', 'avg_kernel_area', 'avg_kernel_area_ratio', 'avg_width', 'avg_height', 'coins_width_avg', 'coin_size', 'pixel_cm_ratio', 'brightness', 'blurry_value'], tablefmt = 'orgtbl')
-    
-    print(table + "\n")
 
+    '''
     ##############################################################################################
     # save computation traits results as excel file
     
@@ -2555,9 +2503,9 @@ if __name__ == '__main__':
         wb = openpyxl.load_workbook(trait_file)
 
         #Get the current Active Sheet
-        sheet_pixel = wb['trait_pixel']
+        #sheet = wb['trait_pixel']
 
-        sheet_pixel.delete_rows(2, sheet_pixel.max_row - 1) # for entire sheet
+        #sheet_pixel.delete_rows(2, sheet_pixel.max_row - 1) # for entire sheet
 
         #Get the current Active Sheet
         sheet_cm = wb['trait_cm']
@@ -2571,50 +2519,29 @@ if __name__ == '__main__':
         
         #sheet = wb.active
         
-        sheet_pixel = wb.active
-        sheet_pixel.title = "trait_pixel"
-        
-        sheet_cm = wb.create_sheet("Sheet2")
+        sheet_cm = wb.active
         sheet_cm.title = "trait_cm"
- 
-    # assign traits label names
-    sheet_pixel.cell(row = 1, column = 1).value = 'filename'
-    sheet_pixel.cell(row = 1, column = 2).value = 'tag_info'
-    sheet_pixel.cell(row = 1, column = 3).value = 'average_kernel_size'
-    sheet_pixel.cell(row = 1, column = 4).value = 'average_number_valid_kernels'
-    sheet_pixel.cell(row = 1, column = 5).value = 'average_number_all_kernels'
-    sheet_pixel.cell(row = 1, column = 6).value = 'average_kernel_area'
-    sheet_pixel.cell(row = 1, column = 7).value = 'average_kernel_area_ratio'
-    sheet_pixel.cell(row = 1, column = 8).value = 'average_width'
-    sheet_pixel.cell(row = 1, column = 9).value = 'average_height'
-    sheet_pixel.cell(row = 1, column = 10).value = 'average_coins_width'
-    sheet_pixel.cell(row = 1, column = 11).value = 'average_coin_size'
-    sheet_pixel.cell(row = 1, column = 12).value = 'pixel/cm_ratio'
-    sheet_pixel.cell(row = 1, column = 13).value = 'brightness'
-    sheet_pixel.cell(row = 1, column = 14).value = 'blurry_value'
+        
 
-
+            
     # assign traits label names
     sheet_cm.cell(row = 1, column = 1).value = 'filename'
     sheet_cm.cell(row = 1, column = 2).value = 'tag_info'
-    sheet_cm.cell(row = 1, column = 3).value = 'average_kernel_size'
-    sheet_cm.cell(row = 1, column = 4).value = 'average_number_valid_kernels'
-    sheet_cm.cell(row = 1, column = 5).value = 'average_number_all_kernels'
-    sheet_cm.cell(row = 1, column = 6).value = 'average_kernel_area'
-    sheet_cm.cell(row = 1, column = 7).value = 'average_kernel_area_ratio'
-    sheet_cm.cell(row = 1, column = 8).value = 'average_width'
-    sheet_cm.cell(row = 1, column = 9).value = 'average_height'
-    sheet_cm.cell(row = 1, column = 10).value = 'average_coins_width'
-    sheet_cm.cell(row = 1, column = 11).value = 'average_coin_size'
-    sheet_cm.cell(row = 1, column = 12).value = 'pixel/cm_ratio'
-    sheet_cm.cell(row = 1, column = 13).value = 'brightness'
-    sheet_cm.cell(row = 1, column = 14).value = 'blurry_value'
+    sheet_cm.cell(row = 1, column = 3).value = 'ear_index'
+    sheet_cm.cell(row = 1, column = 4).value = 'ear_area'
+    sheet_cm.cell(row = 1, column = 5).value = 'ear_area_ratio'
+    sheet_cm.cell(row = 1, column = 6).value = 'ear_width'
+    sheet_cm.cell(row = 1, column = 7).value = 'ear_height'
+    sheet_cm.cell(row = 1, column = 8).value = 'number_kernels_all'
+    sheet_cm.cell(row = 1, column = 9).value = 'kernel_size'
+    sheet_cm.cell(row = 1, column = 10).value = 'number_kernels_valid'
+    sheet_cm.cell(row = 1, column = 11).value = 'kernel_size_valid'
+    sheet_cm.cell(row = 1, column = 12).value = 'coins_diameter'
+    sheet_cm.cell(row = 1, column = 13).value = 'coin_size'
+    sheet_cm.cell(row = 1, column = 14).value = 'pixel/cm_ratio'
         
-    # write traits values
-    for row in result_list:
-        sheet_pixel.append(row)
     
-    for row in result_list_cm:
+    for row in result_list:
         sheet_cm.append(row)
         
    
