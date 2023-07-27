@@ -1824,6 +1824,8 @@ def extract_traits(image_file):
     
     mask_external_combined = mask_external_ai & mask_external_cluster
     
+    #mask_external_combined = mask_external_ai 
+    
     mask_external = cv2.threshold(mask_external_combined, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
         
@@ -1923,7 +1925,7 @@ def extract_traits(image_file):
         
         ear_area_ratio_rec.append(area_ratio)
         
-        print("Contour shape info: width = {1:.2f}, height = {2:.2f}, area = {3:.2f} area_ratio = {3:.2f}\n".format(w, h, area_c, area_ratio))
+        print("Contour shape info: width = {1:.2f}, height = {2:.2f}, area = {3:.2f}, area_ratio = {3:.2f}\n".format(w, h, area_c, area_ratio))
         ############################################################################################
 
         mask_individual = mask_from_contour(orig.copy(), c_internal)
@@ -2200,7 +2202,7 @@ if __name__ == '__main__':
        
         for i in range(len(ear_index_rec)):
             
-            result_list.append([image_file_name, tag_info, ear_index_rec[i], ear_area_rec[i]/pow(pixel_cm_ratio,2), ear_area_ratio_rec[i]/pow(pixel_cm_ratio,2), ear_width_rec[i]/pixel_cm_ratio, ear_height_rec[i]/pixel_cm_ratio, \
+            result_list.append([image_file_name, tag_info, ear_index_rec[i], ear_area_rec[i]/pow(pixel_cm_ratio,2), ear_area_ratio_rec[i], ear_width_rec[i]/pixel_cm_ratio, ear_height_rec[i]/pixel_cm_ratio, \
                                     n_kernels_all_rec[i], kernel_size_rec[i]/pow(pixel_cm_ratio,2), n_kernels_valid_rec[i], kernel_valid_size_rec[i]/pow(pixel_cm_ratio,2), \
                                     diameter_circle/pixel_cm_ratio, coin_size, pixel_cm_ratio])
 
