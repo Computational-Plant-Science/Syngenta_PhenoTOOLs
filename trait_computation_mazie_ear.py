@@ -2164,15 +2164,15 @@ def extract_traits(image_file):
     masked_valid_kernel = cv2.bitwise_and(masked_image.copy(), masked_image.copy(), mask = v_mask)
     
     # save result
-    #result_file = (save_path + base_name + '_masked_valid_kernel' + file_extension)
-    #cv2.imwrite(result_file, masked_valid_kernel)
+    result_file = (save_path + base_name + '_masked_valid_kernel' + file_extension)
+    cv2.imwrite(result_file, masked_valid_kernel)
     
     # apply individual object mask
     masked_all_kernel = cv2.bitwise_and(masked_image.copy(), masked_image.copy(), mask = combined_mask)
     
     # save result
-    #result_file = (save_path + base_name + '_masked_all_kernel' + file_extension)
-    #cv2.imwrite(result_file, masked_all_kernel)
+    result_file = (save_path + base_name + '_masked_all_kernel' + file_extension)
+    cv2.imwrite(result_file, masked_all_kernel)
     
     mask_valid_all = []
     mask_valid_all.append(masked_valid_kernel)
@@ -2210,8 +2210,8 @@ def extract_traits(image_file):
         #cv2.imwrite(result_file, thresh_adaptive_threshold)
         
         # save result
-        #result_file = (save_path + base_name + '_maksed_img_adaptive_threshold' + file_extension)
-        #cv2.imwrite(result_file, maksed_img_adaptive_threshold)
+        result_file = (save_path + base_name + '_maksed_img_adaptive_threshold' + file_extension)
+        cv2.imwrite(result_file, maksed_img_adaptive_threshold)
 
         
         ###################################################################################

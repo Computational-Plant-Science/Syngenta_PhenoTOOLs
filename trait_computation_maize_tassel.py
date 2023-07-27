@@ -74,7 +74,6 @@ from pathlib import Path
 from pylibdmtx.pylibdmtx import decode
 import re
 
-
 import psutil
 import concurrent.futures
 import multiprocessing
@@ -1174,6 +1173,42 @@ def balanced_hist_thresholding(b):
 
 
 
+def get_marker_region(orig, mask_external):
+    
+    """compute masked image for coin and tag detection.
+    
+    Inputs: 
+    
+        orig: image data
+        
+        mask_external: detected mask for foreground objects
+
+    Returns:
+    
+        roi_image: masked image by filling the foreground objects by black color
+        
+    """
+    # create an size 10 kernel
+    kernel = np.ones((25,25), np.uint8)
+    
+    # image dilation
+    dilation = cv2.dilate(mask_external.copy(), kernel, iterations = 1)
+    
+    # image closing
+    mask_external_dilate = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel)
+    
+    
+    # Inverting the mask by performing bitwise-not operation
+    mask_external_invert = cv2.bitwise_not(mask_external_dilate)
+    
+    roi_image = cv2.bitwise_and(orig, orig, mask = mask_external_invert)
+    
+
+    return roi_image
+
+
+
+
 def his_plot(data_list, save_path, base_name):
     
   
@@ -1397,8 +1432,9 @@ def adjust_gamma(image, gamma):
  
     # apply gamma correction using the lookup table
     return cv2.LUT(image, table)
-    
-    
+
+
+
 
 def extract_traits(image_file):
 
@@ -1484,16 +1520,13 @@ def extract_traits(image_file):
     img_height, img_width, img_channels = orig.shape
     
     #source_image = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
-    
 
     
     # parse input arguments
     args_colorspace = args['color_space']
     args_channels = args['channels']
     args_num_clusters = args['num_clusters']
-    
-    
-    
+
     #color clustering based object segmentation to accquire external contours
     image_mask = color_cluster_seg(image.copy(), args_colorspace, args_channels, args_num_clusters)
     
@@ -1618,6 +1651,9 @@ def extract_traits(image_file):
         y = int(img_height*0.5)
         w = int(img_width*0.5)
         h = int(img_height*0.5)
+    
+    
+    #roi_image = get_marker_region(orig, mask_external)
     
     roi_image = region_extracted(orig, x, y, w, h)
     
