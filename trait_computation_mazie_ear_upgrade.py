@@ -347,14 +347,8 @@ def mutilple_objects_seg(orig, channel, size_kernel):
     #print("left-to-right")
     #print(len(cnts_sorted))
     
-    '''
-    # if two contours are connected remove the significantly smaller one in size
-    if cv2.contourArea(cnts_sorted[0]) > 10*cv2.contourArea(cnts_sorted[1]):
-        
-        cnts_sorted = cnts_sorted[:1]
-    '''
 
-    # initialize variables to record the centera, area of contours
+    # initialize variables to record the centers, area of contours
     center_locX = []
     center_locY = []
     cnt_area = [0] * n_ear
@@ -388,12 +382,12 @@ def mutilple_objects_seg(orig, channel, size_kernel):
         
     
     # get the middle point coordinate of the two centers of the contours
-    divide_X = int(sum(center_locX) / len(center_locX))
-    divide_Y = int(sum(center_locY) / len(center_locY))
+    #divide_X = int(sum(center_locX) / len(center_locX))
+    #divide_Y = int(sum(center_locY) / len(center_locY))
     
     # get the left and right segmentation of the image 
-    left_img = orig[0:height, 0:divide_X]
-    right_img = orig[0:height, divide_X:width]
+    #left_img = orig[0:height, 0:divide_X]
+    #right_img = orig[0:height, divide_X:width]
     
 
     # convert the mask image to gray format
@@ -406,7 +400,7 @@ def mutilple_objects_seg(orig, channel, size_kernel):
     
     
     
-'''
+
 # color clustering based object segmentation
 def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
     
@@ -541,7 +535,7 @@ def color_cluster_seg(image, args_colorspace, args_channels, args_num_clusters):
 
     return img_thresh
     
-'''
+
 
 
 
@@ -1824,8 +1818,12 @@ def extract_traits(image_file):
     
     (mask_external_cluster) = mutilple_objects_seg(orig, channel = 'L', size_kernel = 10)
     
+   
+    #color clustering based object segmentation to accquire another external contours
+    #mask_external_cluster = color_cluster_seg(image.copy(), args['color_space'], args['channels'], args['num_clusters'])
+    
     mask_external_combined = mask_external_ai & mask_external_cluster
-
+    
     mask_external = cv2.threshold(mask_external_combined, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
         
@@ -2104,7 +2102,7 @@ if __name__ == '__main__':
     ap.add_argument('-n', '--num-clusters', type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-ne', '--num_ears', type = int, required = False, default = 2,  help = 'Number of ears in image (default 2).')
     ap.add_argument('-min', '--min_size', type = int, required = False, default = 250000,  help = 'min size of object to be segmented.')
-    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 38,  help = 'distance threshold for watershed segmentation.')
+    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 18,  help = 'distance threshold for watershed segmentation.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin diameter in cm')
     ap.add_argument('-vkrl', '--valid_kernel_ratio_left', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from left')
     ap.add_argument('-vkrr', '--valid_kernel_ratio_right', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from right')
