@@ -243,7 +243,7 @@ def mutilple_objects_detection(orig):
 
 
 # segment mutiple objects in image, for maize ear image, based on the protocal, shoudl be two objects. 
-def mutilple_objects_seg(orig, channel):
+def mutilple_objects_seg(orig, channel, size_kernel):
 
     """segment mutiple objects in image, for maize ear image, based on the protocal, should be less than 5 objects.
     
@@ -319,9 +319,9 @@ def mutilple_objects_seg(orig, channel):
     
     # Taking a matrix of size_ker as the kernel
     
-    size_ker = 10
+    #size_kernel = 10
     
-    kernel = np.ones((size_ker, size_ker), np.uint8)
+    kernel = np.ones((size_kernel, size_kernel), np.uint8)
     
     # apply morphological operations to remove noise
     thresh_dilation = cv2.dilate(thresh, kernel, iterations=1)
@@ -1820,21 +1820,17 @@ def extract_traits(image_file):
     
     ##########################################################################################################
     # segment mutiple objects in image uto accquire external contours
-    (mask_external, img_foreground) = mutilple_objects_detection(orig)
+    (mask_external_ai, img_foreground) = mutilple_objects_detection(orig)
     
+    (mask_external_cluster) = mutilple_objects_seg(orig, channel = 'L', size_kernel = 10)
     
-    '''
-    
-    #clean small holes and hair
+    mask_external_combined = mask_external_ai & mask_external_cluster
 
-    '''
-    
-
-    mask_external = cv2.threshold(mask_external, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    mask_external = cv2.threshold(mask_external_combined, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
         
     # apply individual object mask
-    img_foreground = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_external)
+    img_foreground = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_external_combined)
     
     
     # save result
@@ -1852,7 +1848,7 @@ def extract_traits(image_file):
     # segment mutiple objects in image using thresh method to accquire internal contours
     #(left_img, right_img, mask_seg, img_overlay, cnt_area_internal) = mutilple_objects_seg(orig, channel = 'B')
     
-    (mask_internal) = mutilple_objects_seg(orig, channel = 'B')
+    (mask_internal) = mutilple_objects_seg(orig, channel = 'B', size_kernel = 15)
     
     #mask_internal = mask_seg
     
@@ -2293,7 +2289,7 @@ if __name__ == '__main__':
         #sheet_pixel.delete_rows(2, sheet_pixel.max_row - 1) # for entire sheet
 
         #Get the current Active Sheet
-        sheet_cm = wb['trait_cm']
+        sheet_cm = wb['traits']
 
         sheet_cm.delete_rows(2, sheet_cm.max_row - 1) # for entire sheet
         
