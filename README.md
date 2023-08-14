@@ -19,7 +19,7 @@ Sample ear test results in Excel format, unit (cm).
 
 Sample multiple ear test results in Excel format, unit (cm). 
 
-![Maize tassel test](../main/media/image_04.png) 
+
 
 
 
