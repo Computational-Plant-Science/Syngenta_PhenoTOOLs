@@ -17,10 +17,12 @@ Sample ear test results in Excel format,unit (cm).
 
 ![Sample result of Ear test, unit(cm)](../main/media/image_03.png)
 
+![Sample result of Mutiple Ear test, unit(cm)](../main/media/image_04.png)
+
 
 Sample mutiple ear test results in Excel format,unit (cm). 
 
-![Sample result of Mutiple Ear test, unit(cm)](../main/media/image_04.png)
+
 
 
 ## Imaging requirement:
