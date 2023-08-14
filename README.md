@@ -7,6 +7,8 @@ Author: Suxing Liu,  Alexander Bucksch
 
 ![Maize tassel test](../main/media/image_02.png) 
 
+![Maize tassel test](../main/media/image_04.png) 
+
 Robust and parameter-free plant image segmentation and trait extraction.
 
 1. Process with plant image top view, including whole tray plant image.
