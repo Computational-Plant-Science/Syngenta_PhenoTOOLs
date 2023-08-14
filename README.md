@@ -11,23 +11,21 @@ Robust and parameter-free plant image segmentation and trait extraction.
 
 1. Process with plant image top view, including whole tray plant image.
 2. Robust segmentation based on parameter-free color clustering method.
-3. Extract individual plant traits, and write output into excel file.
+3. Extract individual plant traits, and write output into an excel file.
 
-Sample ear test results in Excel format,unit (cm). 
+Sample ear test results in Excel format, unit (cm). 
 
 ![Sample result of Ear test, unit(cm)](../main/media/image_03.png)
 
-![Sample result of Mutiple Ear test, unit(cm)](../main/media/image_04.png)
+Sample multiple ear test results in Excel format, unit (cm). 
 
-
-Sample mutiple ear test results in Excel format,unit (cm). 
-
+![Sample result of Ear test, unit(cm)](../main/media/image_04.png)
 
 
 
 ## Imaging requirement:
 1. Tassel branches are opened and spread out evenly. 
-2. Background was in black color and diffusion reflection material, not reflective.
+2. Background was black in color and diffusion reflection material, not reflective.
 3. Coin and barcode should be placed under the bottom line of the tassel. 
 4. Coin and barcode template images should be cropped and stored in the folder "marker_template" as "barcode.png" and "coin.png" to aid the detection. These template images should be the same for one experiment.
 5. Suggested Coin was silver Brazil 1 Real coin, golden ones are not suggested. 
@@ -42,11 +40,11 @@ Install Docker Engine (https://docs.docker.com/engine/install/)
 ## Usage
 
 
-1. Build docker image on your PC under linux environment
+1. Build a docker image on your PC under Linux environment
 ```shell
 docker build -t syngenta_phenotools -f Dockerfile .
 ```
-2. Download prebuild docker image from Docker hub
+2. Download prebuild docker image from the Docker hub
 ```shell
 docker pull computationalplantscience/syngenta_phenotools
 ```
