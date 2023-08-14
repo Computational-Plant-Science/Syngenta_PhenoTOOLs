@@ -18,6 +18,11 @@ Sample ear test results in Excel format,unit (cm).
 ![Sample result of Ear test, unit(cm)](../main/media/image_03.png)
 
 
+Sample mutiple ear test results in Excel format,unit (cm). 
+
+![Sample result of Mutiple Ear test, unit(cm)](../main/media/image_04.png)
+
+
 ## Imaging requirement:
 1. Tassel branches are opened and spread out evenly. 
 2. Background was in black color and diffusion reflection material, not reflective.
@@ -61,4 +66,16 @@ docker run -v /path_to_your_test_image:/images -it computationalplantscience/syn
 python3 trait_computation_mazie_ear.py -p /images/ -ft png
 
 python3 trait_computation_maize_tassel.py -p /images/ -ft png
+
+
+Update:
+
+to run mutiple ear test(more than 2 ears, please use "trait_computation_mazie_ear_upgrade.py" and add "-ne 5" paramter)
+
+python3 trait_computation_mazie_ear_upgrade.py -p -p /images/ -ft png -ne 5 -min 250000
+
+
 ```
+
+
+

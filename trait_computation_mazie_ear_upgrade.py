@@ -13,10 +13,7 @@ Created: 2022-09-29
 
 USAGE:
 
-time python3 trait_computation_mazie_ear.py -p ~/example/plant_test/seeds/test_ear/ -ft png -s Lab -c 0 -min 250000
-
-time python3 trait_computation_mazie_ear.py -p ~/example/plant_test/seeds/test_ear/ -ft png -s HSV -c 1 -min 250000
-
+time python3 trait_computation_mazie_ear_upgrade.py -p ~/example/plant_test/seeds/test/ -ft png -s Lab -c 0 -ne 5 -min 250000
 
 
 '''
@@ -1816,7 +1813,7 @@ def extract_traits(image_file):
     # segment mutiple objects in image uto accquire external contours
     (mask_external_ai, img_foreground) = mutilple_objects_detection(orig)
     
-    (mask_external_cluster) = mutilple_objects_seg(orig, channel = 'L', size_kernel = 10)
+    (mask_external_cluster) = mutilple_objects_seg(orig, channel = 'L', size_kernel = 5)
     
    
     #color clustering based object segmentation to accquire another external contours
@@ -1848,7 +1845,7 @@ def extract_traits(image_file):
     # segment mutiple objects in image using thresh method to accquire internal contours
     #(left_img, right_img, mask_seg, img_overlay, cnt_area_internal) = mutilple_objects_seg(orig, channel = 'B')
     
-    (mask_internal) = mutilple_objects_seg(orig, channel = 'B', size_kernel = 15)
+    (mask_internal) = mutilple_objects_seg(orig, channel = 'B', size_kernel = 10)
     
     #mask_internal = mask_seg
     
@@ -2104,7 +2101,7 @@ if __name__ == '__main__':
     ap.add_argument('-n', '--num-clusters', type = int, required = False, default = 2,  help = 'Number of clusters for K-means clustering (default 2, min 2).')
     ap.add_argument('-ne', '--num_ears', type = int, required = False, default = 2,  help = 'Number of ears in image (default 2).')
     ap.add_argument('-min', '--min_size', type = int, required = False, default = 250000,  help = 'min size of object to be segmented.')
-    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 18,  help = 'distance threshold for watershed segmentation.')
+    ap.add_argument('-md', '--min_dist', type = int, required = False, default = 4,  help = 'distance threshold for watershed segmentation.')
     ap.add_argument('-cs', '--coin_size', type = int, required = False, default = 2.7,  help = 'coin diameter in cm')
     ap.add_argument('-vkrl', '--valid_kernel_ratio_left', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from left')
     ap.add_argument('-vkrr', '--valid_kernel_ratio_right', type = float, required = False, default = 0.10,  help = 'valid kernel ratio copmpared with ear width from right')
