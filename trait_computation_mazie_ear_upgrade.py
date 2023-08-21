@@ -13,7 +13,7 @@ Created: 2022-09-29
 
 USAGE:
 
-time python3 trait_computation_mazie_ear_upgrade.py -p ~/example/plant_test/seeds/test/ -ft png -s Lab -c 0 -ne 5 -min 250000
+    time python3 trait_computation_mazie_ear_upgrade.py -p ~/example/plant_test/seeds/test/ -ft png -s Lab -c 0 -ne 5 -min 250000
 
 
 '''
@@ -1810,7 +1810,7 @@ def extract_traits(image_file):
     #source_image = cv2.cvtColor(orig, cv2.COLOR_BGR2RGB)
     
     ##########################################################################################################
-    # segment mutiple objects in image uto accquire external contours
+    # segment mutiple objects to accquire external contours
     (mask_external_ai, img_foreground) = mutilple_objects_detection(orig)
     
     (mask_external_cluster) = mutilple_objects_seg(orig, channel = 'L', size_kernel = 5)
@@ -2028,7 +2028,10 @@ def extract_traits(image_file):
     
     ###################################################################################################
     # detect coin and barcode uisng template matching and circle detection method
-    
+    # barcode detection
+    # method for template matching 
+    methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
+        'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
     
     roi_image = get_marker_region(orig, mask_external)
     
@@ -2046,7 +2049,16 @@ def extract_traits(image_file):
     if diameter_circle > 0 :
         pixel_cm_ratio = diameter_circle/coin_size
     else:
-        pixel_cm_ratio = 1
+        
+        (marker_coin_img, thresh_coin, coin_width_contour, diameter_circle) = marker_detect(enhanced_region, tp_coin, methods[0], 0.8)
+
+        if diameter_circle > 0:
+            
+            pixel_cm_ratio = diameter_circle/coin_size
+            
+        else:
+        
+            pixel_cm_ratio = 1
     
     # save result
     result_file = (save_path + base_name + '_coin_circle' + file_extension)
@@ -2056,10 +2068,7 @@ def extract_traits(image_file):
     
     
     
-    # barcode detection
-    # method for template matching 
-    methods = ['cv.TM_CCOEFF', 'cv.TM_CCOEFF_NORMED', 'cv.TM_CCORR',
-        'cv.TM_CCORR_NORMED', 'cv.TM_SQDIFF', 'cv.TM_SQDIFF_NORMED']
+
     
     # apply gamma correction for image region with coin
     gamma = 1.5
