@@ -1819,9 +1819,12 @@ def extract_traits(image_file):
     #color clustering based object segmentation to accquire another external contours
     #mask_external_cluster = color_cluster_seg(image.copy(), args['color_space'], args['channels'], args['num_clusters'])
     
-    mask_external_combined = mask_external_ai & mask_external_cluster
-    
-    #mask_external_combined = mask_external_ai 
+    #mask_external_combined = mask_external_ai & mask_external_cluster
+    if ai_assist == 1:
+        mask_external_combined = mask_external_ai
+    else:
+        mask_external_combined = mask_external_ai & mask_external_cluster
+        
     
     mask_external = cv2.threshold(mask_external_combined, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
     
@@ -1829,7 +1832,18 @@ def extract_traits(image_file):
     # apply individual object mask
     img_foreground = cv2.bitwise_and(image.copy(), image.copy(), mask = mask_external_combined)
     
+    '''
+    # save result
+    result_file = (save_path + base_name + '_mask_external_ai' + file_extension)
+    cv2.imwrite(result_file, mask_external_ai)
     
+    # save result
+    result_file = (save_path + base_name + '_mask_external_cluster' + file_extension)
+    cv2.imwrite(result_file, mask_external_cluster)
+    
+    result_file = (save_path + base_name + '_mask_external_combined' + file_extension)
+    cv2.imwrite(result_file, mask_external_combined)
+    '''
     # save result
     result_file = (save_path + base_name + '_mask_external' + file_extension)
     cv2.imwrite(result_file, mask_external)
@@ -2100,6 +2114,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-p", "--path", required = True,    help = "path to image file")
     ap.add_argument("-ft", "--filetype", required = True,    help = "Image filetype")
+    ap.add_argument('-ai', '--ai_assist', required = False, type = int, default = 1,  help = "turn on AI segmentation")
     ap.add_argument('-mk', '--marker', required = False,  default ='/marker_template/coin.png',  help = "Marker file name")
     ap.add_argument('-bc', '--barcode', required = False,  default ='/marker_template/barcode.png',  help = "Barcode file name")
     ap.add_argument("-r", "--result", required = False,    help="result path")
@@ -2125,6 +2140,8 @@ if __name__ == '__main__':
     
     coin_path = args["marker"]
     barcode_path = args["barcode"]
+    
+    ai_assist = args["ai_assist"]
     
     min_size = args['min_size']
     min_distance_value = args['min_dist']
